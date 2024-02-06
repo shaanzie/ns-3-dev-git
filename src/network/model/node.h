@@ -25,6 +25,7 @@
 #include "ns3/callback.h"
 #include "ns3/object.h"
 #include "ns3/ptr.h"
+#include "ns3/replay-clock.h"
 
 #include <vector>
 
@@ -87,6 +88,12 @@ class Node : public Object
      * \return The time as seen by this node
      */
     Time GetLocalTime() const;
+
+    /**
+     *
+     * \return The ReplayClock as seen by this node
+     */
+    ReplayClock GetReplayClock() const;
 
     /**
      * \returns the system id for parallel simulations associated
@@ -213,6 +220,12 @@ class Node : public Object
      */
     static bool ChecksumEnabled();
 
+    /**
+     *
+     * \param rc_clock Sets the new ReplayClock
+     */
+    void SetReplayClock(ReplayClock rc_clock);
+
   protected:
     /**
      * The dispose method. Subclasses must override this method
@@ -304,6 +317,8 @@ class Node : public Object
     std::vector<Ptr<Application>> m_applications;         //!< Applications associated to this node
     ProtocolHandlerList m_handlers;                       //!< Protocol handlers in the node
     DeviceAdditionListenerList m_deviceAdditionListeners; //!< Device addition listeners in the node
+
+    ReplayClock m_rc;                                     //!< Custom ReplayClock to test Replays
 };
 
 } // namespace ns3

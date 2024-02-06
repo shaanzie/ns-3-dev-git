@@ -32,6 +32,7 @@
 #include "ns3/object-vector.h"
 #include "ns3/simulator.h"
 #include "ns3/uinteger.h"
+#include "ns3/replay-clock.h"
 
 namespace ns3
 {
@@ -105,6 +106,12 @@ void
 Node::Construct()
 {
     NS_LOG_FUNCTION(this);
+    m_rc = ReplayClock(
+        0,
+        m_id,
+        20,
+        2
+    );
     m_id = NodeList::Add(this);
 }
 
@@ -125,6 +132,13 @@ Node::GetLocalTime() const
 {
     NS_LOG_FUNCTION(this);
     return Simulator::Now();
+}
+
+ReplayClock
+Node::GetReplayClock() const
+{
+    NS_LOG_FUNCTION(this);
+    return m_rc;
 }
 
 uint32_t
@@ -389,6 +403,12 @@ Node::NotifyDeviceAdded(Ptr<NetDevice> device)
     {
         (*i)(device);
     }
+}
+
+void
+Node::SetReplayClock(ReplayClock rc_clock)
+{
+    m_rc = rc_clock;
 }
 
 } // namespace ns3
