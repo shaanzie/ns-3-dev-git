@@ -93,6 +93,12 @@ class Node : public Object
      *
      * \return The ReplayClock as seen by this node
      */
+    uint32_t GetNodeLocalClock();
+
+    /**
+     *
+     * \return The ReplayClock as seen by this node
+     */
     ReplayClock GetReplayClock() const;
 
     /**
@@ -318,6 +324,7 @@ class Node : public Object
     ProtocolHandlerList m_handlers;                       //!< Protocol handlers in the node
     DeviceAdditionListenerList m_deviceAdditionListeners; //!< Device addition listeners in the node
 
+    uint32_t m_lc;                                      //!< Local Node clock to implement local time
     ReplayClock m_rc;                                     //!< Custom ReplayClock to test Replays
 };
 

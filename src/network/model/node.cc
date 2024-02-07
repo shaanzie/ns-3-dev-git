@@ -134,6 +134,14 @@ Node::GetLocalTime() const
     return Simulator::Now();
 }
 
+uint32_t
+Node::GetNodeLocalClock()
+{
+    NS_LOG_FUNCTION(this);
+    m_lc = Simulator::Now().GetMicroSeconds();
+    return m_lc;
+}
+
 ReplayClock
 Node::GetReplayClock() const
 {
