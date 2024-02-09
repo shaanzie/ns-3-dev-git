@@ -16,8 +16,8 @@
  *
  * Author: Mohamed Amine Ismail <amine.ismail@sophia.inria.fr>
  */
-#ifndef UDP_CLIENT_SERVER_HELPER_H
-#define UDP_CLIENT_SERVER_HELPER_H
+#ifndef REPLAY_CLIENT_SERVER_HELPER_H
+#define REPLAY_CLIENT_SERVER_HELPER_H
 
 #include "ns3/application-container.h"
 #include "ns3/ipv4-address.h"
@@ -80,11 +80,11 @@ class ReplayServerHelper
      *
      * \returns a Ptr to the last created server application
      */
-    Ptr<UdpServer> GetServer();
+    Ptr<ReplayServer> GetServer();
 
   private:
     ObjectFactory m_factory; //!< Object factory.
-    Ptr<UdpServer> m_server; //!< The last created server application
+    Ptr<ReplayServer> m_server; //!< The last created server application
 };
 
 /**

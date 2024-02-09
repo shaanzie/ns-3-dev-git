@@ -45,7 +45,7 @@ TypeId
 ReplayServer::GetTypeId()
 {
     static TypeId tid =
-        TypeId("ns3::UdpServer")
+        TypeId("ns3::ReplayServer")
             .SetParent<Application>()
             .SetGroupName("Applications")
             .AddConstructor<ReplayServer>()
@@ -174,34 +174,45 @@ ReplayServer::HandleRead(Ptr<Socket> socket)
         socket->GetSockName(localAddress);
         m_rxTrace(packet);
         m_rxTraceWithAddresses(packet, from, localAddress);
+
+        uint8_t* buffer = new uint8_t[64];
+
+        packet->CopyData(buffer, 512);
+
+        for (int i = 0; i < 64; ++i) {
+            std::cout << static_cast<int>(buffer[i]) << " ";
+        }
+        std::cout << std::endl;
+
+        Ptr<Node> server = GetNode();
+        ReplayClock server_rc = server->GetReplayClock();
+        uint32_t* integers = new uint32_t[4];
+        server_rc.Deserialize(buffer, integers);
+        ReplayClock m_rc(integers[0], integers[1], integers[2], integers[3], server->GetId(), 20, 10);
+        server_rc.Recv(m_rc, GetNode()->GetNodeLocalClock());
+        server->SetReplayClock(server_rc);
+
         if (packet->GetSize() > 0)
         {
             uint32_t receivedSize = packet->GetSize();
-            SeqTsHeader seqTs;
-            packet->RemoveHeader(seqTs);
-            uint32_t currentSequenceNumber = seqTs.GetSeq();
             if (InetSocketAddress::IsMatchingType(from))
             {
                 NS_LOG_INFO("TraceDelay: RX " << receivedSize << " bytes from "
                                               << InetSocketAddress::ConvertFrom(from).GetIpv4()
-                                              << " Sequence Number: " << currentSequenceNumber
-                                              << " Uid: " << packet->GetUid() << " TXtime: "
-                                              << seqTs.GetTs() << " RXtime: " << Simulator::Now()
-                                              << " Delay: " << Simulator::Now() - seqTs.GetTs());
+                                              << " Uid: " << packet->GetUid() << " RXtime: " << Simulator::Now());
             }
             else if (Inet6SocketAddress::IsMatchingType(from))
             {
                 NS_LOG_INFO("TraceDelay: RX " << receivedSize << " bytes from "
                                               << Inet6SocketAddress::ConvertFrom(from).GetIpv6()
-                                              << " Sequence Number: " << currentSequenceNumber
-                                              << " Uid: " << packet->GetUid() << " TXtime: "
-                                              << seqTs.GetTs() << " RXtime: " << Simulator::Now()
-                                              << " Delay: " << Simulator::Now() - seqTs.GetTs());
+                                              << " Uid: " << packet->GetUid() << " RXtime: " << Simulator::Now());
             }
-
-            m_lossCounter.NotifyReceived(currentSequenceNumber);
             m_received++;
         }
+
+        delete[] buffer;
+        delete[] integers;
+        
     }
 }
 

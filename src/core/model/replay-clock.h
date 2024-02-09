@@ -63,7 +63,7 @@ public:
 
 
     /** Specification constructor. */
-    inline ReplayClock(int hlc, int nodeId, int epsilon, int interval) : hlc(hlc), nodeId(nodeId), epsilon(epsilon), interval(interval) 
+    inline ReplayClock(uint32_t hlc, uint32_t nodeId, uint32_t epsilon, uint32_t interval) : hlc(hlc), nodeId(nodeId), epsilon(epsilon), interval(interval) 
     {
         offset_bitmap   = 0;
         offsets         = 0;
@@ -73,13 +73,14 @@ public:
         offset_bitmap[nodeId] = 0;
     }
 
+    /** Specification constructor. */
+    inline ReplayClock(uint32_t hlc, uint32_t nodeId, std::bitset<32> offset_bitmap, std::bitset<32> offsets, uint32_t counters, uint32_t epsilon, uint32_t interval) : hlc(hlc), offset_bitmap(offset_bitmap), offsets(offsets), counters(counters), nodeId(nodeId), epsilon(epsilon), interval(interval) 
+    {}    
+
 
     /** Constructor from string representation */
-    inline ReplayClock(std::string replayClockString, int nodeId, int epsilon, int interval)
+    inline ReplayClock(std::string replayClockString, uint32_t nodeId, uint32_t epsilon, uint32_t interval) : nodeId(nodeId), epsilon(epsilon), interval(interval)
     {
-        nodeId      = nodeId;
-        epsilon     = epsilon;
-        interval    = interval;
 
         std::istringstream ss(replayClockString);
         ss >> hlc >> offset_bitmap >> offsets >> counters;
@@ -115,25 +116,25 @@ public:
     ~ReplayClock() {}    
 
     
-    inline int GetNodeId() const
+    inline uint32_t GetNodeId() const
     {
         return nodeId;
     }
 
 
-    inline int GetHLC() const
+    inline uint32_t GetHLC() const
     {
         return hlc;
     }
 
 
-    inline std::bitset<64> GetBitmap() const 
+    inline std::bitset<32> GetBitmap() const 
     {
         return offset_bitmap;
     }
 
 
-    inline std::bitset<64*64> GetOffsets() const
+    inline std::bitset<32> GetOffsets() const
     {
         return offsets;
     }
@@ -143,39 +144,39 @@ public:
      * GetOffsetAtIndex operation to get only the offset of one index..
      * \param [in] index The index of the offset to get
     */
-    int GetOffsetAtIndex(int index);
+    uint32_t GetOffsetAtIndex(uint32_t index);
 
 
-    inline int GetCounters() const
+    inline uint32_t GetCounters() const
     {
         return counters;
     }
 
 
-    inline int GetOffsetSize();
+    inline uint32_t GetOffsetSize();
 
 
-    inline int GetCounterSize();
+    inline uint32_t GetCounterSize();
 
 
-    inline int GetClockSize();
+    inline uint32_t GetClockSize();
 
 
-    static void SetNodeId(int nodeId) 
+    void SetNodeId(uint32_t nodeId_) 
     {
-        nodeId = nodeId;
+        nodeId = nodeId_;
     }
 
 
-    static void SetHLC(int hlc)
+    void SetHLC(uint32_t hlc_)
     {
-        hlc = hlc;
+        hlc = hlc_;
     }
 
 
-    static void SetOffsets(std::bitset<64*64> offsets)
+    void SetOffsets(std::bitset<32> offsets_) 
     {
-        offsets = offsets;
+        offsets = offsets_;
     }
 
 
@@ -184,18 +185,18 @@ public:
      * \param [in] index The index of the offset to set
      * \param [in] newOffset The new offset to set the index to
     */
-    void SetOffsetAtIndex(int index, int newOffset);
+    void SetOffsetAtIndex(uint32_t index, uint8_t newOffset);
 
 
-    static void SetCounters(int counters)
+    void SetCounters(uint32_t counters_)
     {
-        counters = counters;
+        counters = counters_;
     }
 
 
-    static void SetOffsetBitmap(std::bitset<64> offset_bitmap)
+    void SetOffsetBitmap(std::bitset<32> offset_bitmap_)
     {
-        offset_bitmap = offset_bitmap;
+        offset_bitmap = offset_bitmap_;
     }
 
 
@@ -212,8 +213,10 @@ public:
      *
      * \return The ReplayClock expressed in a string
      */
-    inline std::string ToString(std::ostringstream ss) const
+    inline std::string ToString() const
     {
+        std::ostringstream ss;
+
         ss << hlc << " " << offset_bitmap << " " << offsets << " " << counters;
 
         return ss.str();
@@ -224,7 +227,7 @@ public:
      * Send/Local operation to advance the ReplayClock.
      * \param [in] node_hlc The local node clock
     */
-    void SendLocal(int node_hlc);
+    void SendLocal(uint32_t node_hlc);
 
 
     /**
@@ -232,14 +235,14 @@ public:
      * \param [in] m_ReplayClock The event node clock
      * \param [in] node_hlc The local node clock
     */
-    void Recv(ReplayClock m_ReplayClock, int node_hlc);
+    void Recv(ReplayClock m_ReplayClock, uint32_t node_hlc);
 
 
     /**
      * Shift operation to shift the ReplayClock by the local node clock update.
      * \param [in] node_hlc The local node clock
     */
-    void Shift(int node_hlc);
+    void Shift(uint32_t node_hlc);
 
 
     /**
@@ -260,7 +263,7 @@ public:
      * RemoveOffsetAtIndex operation to remove an offset at an index.
      * \param [in] index Offset to remove by index
     */
-    void RemoveOffsetAtIndex(int index);
+    void RemoveOffsetAtIndex(uint32_t index);
 
     /**
      * PrintClock operation to print the clock.
@@ -269,14 +272,26 @@ public:
     void PrintClock(std::ostream& os);
 
 
+    /**
+     * Serialize operation to make a uint8_t buffer for the packet.
+    */
+    void Serialize(uint8_t* buffer);
+
+    /**
+     * Deserialize operation to make a replay clock from the packet.
+    */
+    void Deserialize(uint8_t* buffer, uint32_t* integers);
+
+
+
 private:
-    int                 hlc;            //!< Hybrid Logical Clock for topmost level
-    std::bitset<64>     offset_bitmap;  //!< Offset bitmap that stores true for nodes whose offsets are being tracked
-    std::bitset<64*64>  offsets;        //!< Value of offsets for the nodes where bitmap denotes true
-    int                 counters;       //!< Counters for events occuring within an interval
-    int                 nodeId;         //!< NodeID of the current node
-    int                 epsilon;        //!< Maximum acceptable clock skew
-    int                 interval;       //!< Discretizing the standard flow of time to save space
+    uint32_t                 hlc;               //!< Hybrid Logical Clock for topmost level
+    std::bitset<32>          offset_bitmap;     //!< Offset bitmap that stores true for nodes whose offsets are being tracked
+    std::bitset<32>          offsets;           //!< Value of offsets for the nodes where bitmap denotes true
+    uint32_t                 counters;          //!< Counters for events occuring within an interval
+    uint32_t                 nodeId;            //!< NodeID of the current node
+    uint32_t                 epsilon;           //!< Maximum acceptable clock skew
+    uint32_t                 interval;          //!< Discretizing the standard flow of time to save space
 
 };
 

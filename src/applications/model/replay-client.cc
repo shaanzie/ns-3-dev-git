@@ -76,15 +76,7 @@ ReplayClient::GetTypeId()
                           "the size of the header carrying the sequence number and the time stamp.",
                           UintegerValue(1024),
                           MakeUintegerAccessor(&ReplayClient::m_size),
-                          MakeUintegerChecker<uint32_t>(12, 65507))
-            .AddTraceSource("Tx",
-                            "A new packet is created and sent",
-                            MakeTraceSourceAccessor(&ReplayClient::m_txTrace),
-                            "ns3::Packet::TracedCallback")
-            .AddTraceSource("TxWithAddresses",
-                            "A new packet is created and sent",
-                            MakeTraceSourceAccessor(&ReplayClient::m_txTraceWithAddresses),
-                            "ns3::Packet::TwoAddressTracedCallback");
+                          MakeUintegerChecker<uint32_t>(12, 65507));
     return tid;
 }
 
@@ -212,27 +204,29 @@ ReplayClient::Send()
     NS_LOG_FUNCTION(this);
     NS_ASSERT(m_sendEvent.IsExpired());
 
+    Ptr<Node> sender = GetNode();
+    ReplayClock client_rc = sender->GetReplayClock();
+    client_rc.SendLocal(GetNode()->GetNodeLocalClock());
+    sender->SetReplayClock(client_rc);
+    
     Address from;
     Address to;
     m_socket->GetSockName(from);
     m_socket->GetPeerName(to);
-    SeqTsHeader seqTs;
-    seqTs.SetSeq(m_sent);
-    NS_ABORT_IF(m_size < seqTs.GetSerializedSize());
-    Ptr<Packet> p = Create<Packet>(m_size - seqTs.GetSerializedSize());
 
-    // Trace before adding header, for consistency with PacketSink
-    m_txTrace(p);
-    m_txTraceWithAddresses(p, from, to);
+    uint8_t *repcl_buf = new uint8_t[64];
+    client_rc.Serialize(repcl_buf);
 
-    p->AddHeader(seqTs);
+    uint32_t size = sizeof(uint8_t) * 64;
+
+    Ptr<Packet> p = Create<Packet>(repcl_buf, size);
 
     if ((m_socket->Send(p)) >= 0)
     {
         ++m_sent;
         m_totalTx += p->GetSize();
 #ifdef NS3_LOG_ENABLE
-        NS_LOG_INFO("TraceDelay TX " << m_size << " bytes to " << m_peerAddressString << " Uid: "
+        NS_LOG_INFO("TraceDelay TX " << p->GetSize() << " bytes to " << m_peerAddressString << " Uid: "
                                      << p->GetUid() << " Time: " << (Simulator::Now()).As(Time::S));
 #endif // NS3_LOG_ENABLE
     }
@@ -247,6 +241,9 @@ ReplayClient::Send()
     {
         m_sendEvent = Simulator::Schedule(m_interval, &ReplayClient::Send, this);
     }
+
+    delete[] repcl_buf;
+
 }
 
 uint64_t

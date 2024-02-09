@@ -27,32 +27,32 @@ namespace ns3
 
 NS_LOG_COMPONENT_DEFINE("ReplayClock");
 
-int 
+uint32_t 
 ReplayClock::GetOffsetSize()
 {
-    return (offset_bitmap.count()*64)/8;
+    return (offset_bitmap.count()*32)/8;
 }
 
-int 
+uint32_t 
 ReplayClock::GetCounterSize()
 {
     return sizeof(counters);
 }
 
-int 
+uint32_t 
 ReplayClock::GetClockSize()
 {
     return GetOffsetSize() + GetCounterSize() + sizeof(hlc);
 }
 
 void 
-ReplayClock::SendLocal(int node_hlc)
+ReplayClock::SendLocal(uint32_t node_hlc)
 {
 
-    int new_hlc = std::max(hlc, node_hlc);
-    int new_offset = new_hlc - node_hlc;
+    uint32_t new_hlc = std::max(hlc, node_hlc);
+    uint32_t new_offset = new_hlc - node_hlc;
 
-    int offset_at_pid = GetOffsetAtIndex(nodeId);
+    uint32_t offset_at_pid = GetOffsetAtIndex(nodeId);
 
     // Make sure this case does not happen
     if (new_hlc == hlc && offset_at_pid <= new_offset)
@@ -74,9 +74,9 @@ ReplayClock::SendLocal(int node_hlc)
 }
 
 void 
-ReplayClock::Recv(ReplayClock m_ReplayClock, int node_hlc)
+ReplayClock::Recv(ReplayClock m_ReplayClock, uint32_t node_hlc)
 {
-    int new_hlc = std::max(hlc, m_ReplayClock.hlc);
+    uint32_t new_hlc = std::max(hlc, m_ReplayClock.hlc);
     new_hlc = std::max(new_hlc, node_hlc);
 
     ReplayClock a = *this;
@@ -111,18 +111,18 @@ ReplayClock::Recv(ReplayClock m_ReplayClock, int node_hlc)
 }
 
 void 
-ReplayClock::Shift(int new_hlc)
+ReplayClock::Shift(uint32_t new_hlc)
 {
-    int bitmap = offset_bitmap.to_ulong();
-    int index = 0;
+    uint32_t bitmap = offset_bitmap.to_ulong();
+    uint32_t index = 0;
     while(bitmap > 0)
     {
 
-        int offset_at_index = GetOffsetAtIndex(index);
+        uint32_t offset_at_index = GetOffsetAtIndex(index);
 
-        int pos = log2((~(bitmap ^ (~(bitmap - 1))) + 1) >> 1);
+        uint32_t pos = log2((~(bitmap ^ (~(bitmap - 1))) + 1) >> 1);
 
-        int new_offset = std::min(new_hlc - (hlc - offset_at_index), epsilon);
+        uint32_t new_offset = std::min(new_hlc - (hlc - offset_at_index), epsilon);
 
         if(new_offset >= epsilon)
         {    
@@ -147,14 +147,14 @@ ReplayClock::MergeSameEpoch(ReplayClock m_ReplayClock)
     
     offset_bitmap = offset_bitmap | m_ReplayClock.offset_bitmap;
 
-    int bitmap = offset_bitmap.to_ulong();
-    int index = 0;
+    uint32_t bitmap = offset_bitmap.to_ulong();
+    uint32_t index = 0;
 
     while(bitmap > 0)
     {
-        int pos = log2((~(bitmap ^ (~(bitmap - 1))) + 1) >> 1);
+        uint32_t pos = log2((~(bitmap ^ (~(bitmap - 1))) + 1) >> 1);
         
-        int new_offset = std::min(GetOffsetAtIndex(pos), m_ReplayClock.GetOffsetAtIndex(pos));
+        uint32_t new_offset = std::min(GetOffsetAtIndex(pos), m_ReplayClock.GetOffsetAtIndex(pos));
         SetOffsetAtIndex(index, new_offset);
 
         if(GetOffsetAtIndex(pos) >= epsilon)
@@ -181,19 +181,19 @@ ReplayClock::EqualOffset(ReplayClock a) const
 
 // Helper Function to extract k bits from p position
 // and returns the extracted value as integer
-int 
+uint32_t 
 extract(int number, int k, int p)
 {
     return (((1 << k) - 1) & (number >> (p)));
 }
 
-int 
-ReplayClock::GetOffsetAtIndex(int index)
+uint32_t 
+ReplayClock::GetOffsetAtIndex(uint32_t index)
 {
     
-    // cout << endl << "Extract " << 64 << " bits from position " << 64*index << endl;
+    // cout << endl << "Extract " << 8 << " bits from position " << 4*index << endl;
 
-    std::bitset<64> offset(extract(offsets.to_ulong(), 64, 64*index));
+    std::bitset<32> offset(extract(offsets.to_ulong(), 8, 4*index));
     
     // cout << "Offset: " << offset << endl;
 
@@ -202,33 +202,33 @@ ReplayClock::GetOffsetAtIndex(int index)
 }
 
 void 
-ReplayClock::SetOffsetAtIndex(int index, int new_offset)
+ReplayClock::SetOffsetAtIndex(uint32_t index, uint8_t new_offset)
 {
     // Convert new offset to bitset and add bitset at appropriate position
     
-    std::bitset<64> offset(new_offset);
+    std::bitset<32> offset(new_offset);
 
-    std::bitset<64*64> res(extract(offsets.to_ulong(), 64*index, 0));
+    std::bitset<32> res(extract(offsets.to_ulong(), 4*index, 0));
 
-    res |= offset.to_ulong() << index*64;
+    res |= offset.to_ulong() << index*4;
 
-    std::bitset<64*64> lastpart(extract(offsets.to_ulong(), 64*64 - (64*(index + 1)), 64*(index + 1)));
+    std::bitset<32> lastpart(extract(offsets.to_ulong(), 32 - (4*(index + 1)), 4*(index + 1)));
 
-    res |= lastpart << ((index+1)*64);
+    res |= lastpart << ((index+1)*4);
 
     offsets = res;
 
 }
 
 void 
-ReplayClock::RemoveOffsetAtIndex(int index)
+ReplayClock::RemoveOffsetAtIndex(uint32_t index)
 {
     // Remove and squash the bitset of given index through index + 4
-    std::bitset<64*64> res(extract(offsets.to_ulong(), 64*index, 0));
+    std::bitset<32> res(extract(offsets.to_ulong(), 4*index, 0));
     
-    std::bitset<64*64> lastpart(extract(offsets.to_ulong(), 64*64 - (64*(index + 1)), 64*(index + 1)));
+    std::bitset<32> lastpart(extract(offsets.to_ulong(), 32 - (4*(index + 1)), 4*(index + 1)));
 
-    res |= lastpart << ((index+1)*64);
+    res |= lastpart << ((index+1)*4);
 
     offsets = res;
 
@@ -242,6 +242,66 @@ ReplayClock::IsEqual(ReplayClock f)
         return false;
     }
     return true;
+}
+
+void 
+ReplayClock::Serialize(uint8_t* buffer)
+{
+    
+    uint32_t integers[4] = {
+        hlc, 
+        static_cast<uint32_t>(offset_bitmap.to_ulong()),
+        static_cast<uint32_t>(offsets.to_ulong()), 
+        counters
+    };
+
+    // Convert each uint32_t integer into four uint8_t values and concatenate into a single array
+    for (int i = 0; i < 4; ++i) {
+        buffer[i * 16] = (integers[i] >> 24) & 0xFF;
+        buffer[i * 16 + 1] = (integers[i] >> 16) & 0xFF;
+        buffer[i * 16 + 2] = (integers[i] >> 8) & 0xFF;
+        buffer[i * 16 + 3] = integers[i] & 0xFF;
+
+        buffer[i * 16 + 4] = (integers[i] >> 24) & 0xFF;
+        buffer[i * 16 + 5] = (integers[i] >> 16) & 0xFF;
+        buffer[i * 16 + 6] = (integers[i] >> 8) & 0xFF;
+        buffer[i * 16 + 7] = integers[i] & 0xFF;
+
+        buffer[i * 16 + 8] = (integers[i] >> 24) & 0xFF;
+        buffer[i * 16 + 9] = (integers[i] >> 16) & 0xFF;
+        buffer[i * 16 + 10] = (integers[i] >> 8) & 0xFF;
+        buffer[i * 16 + 11] = integers[i] & 0xFF;
+
+        buffer[i * 16 + 12] = (integers[i] >> 24) & 0xFF;
+        buffer[i * 16 + 13] = (integers[i] >> 16) & 0xFF;
+        buffer[i * 16 + 14] = (integers[i] >> 8) & 0xFF;
+        buffer[i * 16 + 15] = integers[i] & 0xFF;
+    }
+
+    for(int i = 0; i < 4; i++)
+    {
+        std::cout << integers[i] << std::endl;
+    }
+
+}
+
+void
+ReplayClock::Deserialize(uint8_t* buffer, uint32_t* integers)
+{
+
+    // Convert each 4 uint8_t values into a uint32_t integer
+    for (int i = 0; i < 4; ++i) {
+        integers[i] = (static_cast<uint32_t>(buffer[i * 16]) << 24) |
+                      (static_cast<uint32_t>(buffer[i * 16 + 1]) << 16) |
+                      (static_cast<uint32_t>(buffer[i * 16 + 2]) << 8) |
+                      static_cast<uint32_t>(buffer[i * 16 + 3]);
+    }
+
+    for(int i = 0; i < 4; i++)
+    {
+        std::cout << integers[i] << std::endl;
+    }
+
 }
 
 }   // namespace ns3

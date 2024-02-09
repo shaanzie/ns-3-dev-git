@@ -19,9 +19,8 @@
 #include "replay-client-server-helper.h"
 
 #include "ns3/string.h"
-#include "ns3/udp-client.h"
-#include "ns3/udp-server.h"
-#include "ns3/udp-trace-client.h"
+#include "ns3/replay-client.h"
+#include "ns3/replay-server.h"
 #include "ns3/uinteger.h"
 
 namespace ns3
