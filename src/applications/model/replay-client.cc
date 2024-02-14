@@ -186,7 +186,7 @@ ReplayClient::StartApplication()
     m_peerAddressString = peerAddressStringStream.str();
 #endif // NS3_LOG_ENABLE
 
-    m_socket->SetRecvCallback(MakeNullCallback<void, Ptr<Socket>>());
+    m_socket->SetRecvCallback(MakeCallback(&ReplayClient::HandleRead, this));
     m_socket->SetAllowBroadcast(true);
     m_sendEvent = Simulator::Schedule(Seconds(0.0), &ReplayClient::Send, this);
 }
@@ -203,11 +203,6 @@ ReplayClient::Send()
 {
     NS_LOG_FUNCTION(this);
     NS_ASSERT(m_sendEvent.IsExpired());
-
-    Ptr<Node> sender = GetNode();
-    ReplayClock client_rc = sender->GetReplayClock();
-    client_rc.SendLocal(GetNode()->GetNodeLocalClock());
-    sender->SetReplayClock(client_rc);
     
     Address from;
     Address to;
@@ -215,9 +210,8 @@ ReplayClient::Send()
     m_socket->GetPeerName(to);
 
     uint8_t *repcl_buf = new uint8_t[64];
-    client_rc.Serialize(repcl_buf);
 
-    uint32_t size = sizeof(uint8_t) * 64;
+    uint32_t size = CreateReplayPacket(repcl_buf);
 
     Ptr<Packet> p = Create<Packet>(repcl_buf, size);
 
@@ -225,17 +219,17 @@ ReplayClient::Send()
     {
         ++m_sent;
         m_totalTx += p->GetSize();
-#ifdef NS3_LOG_ENABLE
-        NS_LOG_INFO("TraceDelay TX " << p->GetSize() << " bytes to " << m_peerAddressString << " Uid: "
+        
+        NS_LOG_INFO("TraceDelay TX " << p->GetSize() << " bytes to " << m_peerAddress << " Uid: "
                                      << p->GetUid() << " Time: " << (Simulator::Now()).As(Time::S));
-#endif // NS3_LOG_ENABLE
+                                     
     }
-#ifdef NS3_LOG_ENABLE
+    
     else
     {
-        NS_LOG_INFO("Error while sending " << m_size << " bytes to " << m_peerAddressString);
+        NS_LOG_INFO("Error while sending " << m_size << " bytes to " << m_peerAddress);
     }
-#endif // NS3_LOG_ENABLE
+    
 
     if (m_sent < m_count || m_count == 0)
     {
@@ -243,6 +237,85 @@ ReplayClient::Send()
     }
 
     delete[] repcl_buf;
+
+}
+
+void
+ReplayClient::HandleRead(Ptr<Socket> socket)
+{
+    NS_LOG_FUNCTION(this << socket);
+    Ptr<Packet> packet;
+    Address from;
+    Address localAddress;
+    while ((packet = socket->RecvFrom(from)))
+    {
+        socket->GetSockName(localAddress);
+
+        if (packet->GetSize() > 0)
+        {
+            uint32_t receivedSize = packet->GetSize();
+                NS_LOG_INFO("TraceDelay: RX " << receivedSize << " bytes from "
+                                              << InetSocketAddress::ConvertFrom(from).GetIpv4()
+                                              << " Uid: " << packet->GetUid() << " RXtime: " << Simulator::Now());
+
+            ProcessPacket(packet);
+        }
+        
+    }
+}
+
+uint32_t
+ReplayClient::CreateReplayPacket(uint8_t* buffer)
+{
+
+    Ptr<Node> client = GetNode();
+    ReplayClock client_rc = client->GetReplayClock();
+
+#ifdef REPCL_CONFIG_H
+    client_rc.SendLocal(GetNode()->GetNodeLocalClock() / INTERVAL);
+#else
+    client_rc.SendLocal(GetNode()->GetNodeLocalClock() / 10);
+#endif
+    
+    client->SetReplayClock(client_rc);
+
+    client_rc.Serialize(buffer);
+
+    return client_rc.GetClockSize();
+
+}
+
+void
+ReplayClient::ProcessPacket(Ptr<Packet> packet)
+{
+
+    uint8_t* buffer = new uint8_t[64];
+
+    packet->CopyData(buffer, 512);
+
+    Ptr<Node> server = GetNode();
+    ReplayClock server_rc = server->GetReplayClock();
+
+    uint32_t* integers = new uint32_t[4];
+
+    server_rc.Deserialize(buffer, integers);
+
+#ifdef REPCL_CONFIG_H
+    ReplayClock m_rc(integers[0], server->GetId(), integers[1], integers[2], integers[3], EPSILON, INTERVAL);
+#else
+    ReplayClock m_rc(integers[0], server->GetId(), integers[1], integers[2], integers[3], 20, 10);
+#endif
+
+#ifdef REPCL_CONFIG_H
+    server_rc.Recv(m_rc, GetNode()->GetNodeLocalClock() / INTERVAL);
+#else
+    server_rc.Recv(m_rc, GetNode()->GetNodeLocalClock() / 10);
+#endif
+
+    server->SetReplayClock(server_rc);
+
+    delete[] buffer;
+    delete[] integers;
 
 }
 

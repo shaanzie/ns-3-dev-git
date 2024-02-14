@@ -89,6 +89,12 @@ class ReplayClient : public Application
     /// Callbacks for tracing the packet Tx events, includes source and destination addresses
     TracedCallback<Ptr<const Packet>, const Address&, const Address&> m_txTraceWithAddresses;
 
+    void HandleRead(Ptr<Socket> socket);
+
+
+    void ProcessPacket(Ptr<Packet> packet);
+    uint32_t CreateReplayPacket(uint8_t* buffer);
+
     uint32_t m_count; //!< Maximum number of packets the application will send
     Time m_interval;  //!< Packet inter-send time
     uint32_t m_size;  //!< Size of the sent packet (including the SeqTsHeader)

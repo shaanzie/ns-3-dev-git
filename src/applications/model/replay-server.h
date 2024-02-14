@@ -98,6 +98,9 @@ class ReplayServer : public Application
      */
     void HandleRead(Ptr<Socket> socket);
 
+    void ProcessPacket(Ptr<Packet> packet);
+    uint32_t CreateReplayPacket(uint8_t* buffer);
+
     uint16_t m_port;                 //!< Port on which we listen for incoming packets.
     Ptr<Socket> m_socket;            //!< IPv4 Socket
     Ptr<Socket> m_socket6;           //!< IPv6 Socket

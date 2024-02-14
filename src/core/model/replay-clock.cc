@@ -278,11 +278,6 @@ ReplayClock::Serialize(uint8_t* buffer)
         buffer[i * 16 + 15] = integers[i] & 0xFF;
     }
 
-    for(int i = 0; i < 4; i++)
-    {
-        std::cout << integers[i] << std::endl;
-    }
-
 }
 
 void
@@ -295,11 +290,6 @@ ReplayClock::Deserialize(uint8_t* buffer, uint32_t* integers)
                       (static_cast<uint32_t>(buffer[i * 16 + 1]) << 16) |
                       (static_cast<uint32_t>(buffer[i * 16 + 2]) << 8) |
                       static_cast<uint32_t>(buffer[i * 16 + 3]);
-    }
-
-    for(int i = 0; i < 4; i++)
-    {
-        std::cout << integers[i] << std::endl;
     }
 
 }

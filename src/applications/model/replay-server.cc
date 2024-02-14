@@ -175,45 +175,78 @@ ReplayServer::HandleRead(Ptr<Socket> socket)
         m_rxTrace(packet);
         m_rxTraceWithAddresses(packet, from, localAddress);
 
-        uint8_t* buffer = new uint8_t[64];
-
-        packet->CopyData(buffer, 512);
-
-        for (int i = 0; i < 64; ++i) {
-            std::cout << static_cast<int>(buffer[i]) << " ";
-        }
-        std::cout << std::endl;
-
-        Ptr<Node> server = GetNode();
-        ReplayClock server_rc = server->GetReplayClock();
-        uint32_t* integers = new uint32_t[4];
-        server_rc.Deserialize(buffer, integers);
-        ReplayClock m_rc(integers[0], integers[1], integers[2], integers[3], server->GetId(), 20, 10);
-        server_rc.Recv(m_rc, GetNode()->GetNodeLocalClock());
-        server->SetReplayClock(server_rc);
-
         if (packet->GetSize() > 0)
         {
             uint32_t receivedSize = packet->GetSize();
-            if (InetSocketAddress::IsMatchingType(from))
-            {
                 NS_LOG_INFO("TraceDelay: RX " << receivedSize << " bytes from "
                                               << InetSocketAddress::ConvertFrom(from).GetIpv4()
                                               << " Uid: " << packet->GetUid() << " RXtime: " << Simulator::Now());
-            }
-            else if (Inet6SocketAddress::IsMatchingType(from))
-            {
-                NS_LOG_INFO("TraceDelay: RX " << receivedSize << " bytes from "
-                                              << Inet6SocketAddress::ConvertFrom(from).GetIpv6()
-                                              << " Uid: " << packet->GetUid() << " RXtime: " << Simulator::Now());
-            }
             m_received++;
-        }
 
-        delete[] buffer;
-        delete[] integers;
+            ProcessPacket(packet);
+
+            uint8_t *repcl_buf = new uint8_t[64];
+
+            uint32_t size = CreateReplayPacket(repcl_buf);
+            uint32_t size = sizeof(uint8_t) * 64;
+
+            Ptr<Packet> p = Create<Packet>(repcl_buf, size);
+
+            socket->SendTo(packet, 0, from);
+
+        }
         
     }
+}
+
+uint32_t
+ReplayServer::CreateReplayPacket(uint8_t* buffer)
+{
+
+    Ptr<Node> client = GetNode();
+    ReplayClock client_rc = client->GetReplayClock();
+
+#ifdef REPCL_CONFIG_H
+    client_rc.SendLocal(GetNode()->GetNodeLocalClock() / INTERVAL);
+#else
+    client_rc.SendLocal(GetNode()->GetNodeLocalClock() / 10);
+#endif
+    
+    client->SetReplayClock(client_rc);
+
+    client_rc.Serialize(buffer);
+
+    return client_rc.GetClockSize();
+
+}
+
+void
+ReplayServer::ProcessPacket(Ptr<Packet> packet)
+{
+
+    uint8_t* buffer = new uint8_t[64];
+
+    packet->CopyData(buffer, 512);
+
+    Ptr<Node> server = GetNode();
+    ReplayClock server_rc = server->GetReplayClock();
+
+    uint32_t* integers = new uint32_t[4];
+
+    server_rc.Deserialize(buffer, integers);
+
+#ifdef REPCL_CONFIG_H
+    ReplayClock m_rc(integers[0], server->GetId(), integers[1], integers[2], integers[3], EPSILON, INTERVAL);
+#else
+    ReplayClock m_rc(integers[0], server->GetId(), integers[1], integers[2], integers[3], 20, 10);
+#endif
+
+    server_rc.Recv(m_rc, GetNode()->GetNodeLocalClock());
+    server->SetReplayClock(server_rc);
+
+    delete[] buffer;
+    delete[] integers;
+
 }
 
 } // Namespace ns3

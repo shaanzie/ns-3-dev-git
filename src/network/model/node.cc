@@ -106,12 +106,21 @@ void
 Node::Construct()
 {
     NS_LOG_FUNCTION(this);
+#ifdef REPCL_CONFIG_H
     m_rc = ReplayClock(
-        0,
+        GetNodeLocalClock() / INTERVAL,
+        m_id,
+        INTERVAL,
+        DELTA
+    );
+#else
+    m_rc = ReplayClock(
+        GetNodeLocalClock(),
         m_id,
         20,
         2
     );
+#endif
     m_id = NodeList::Add(this);
 }
 
@@ -138,7 +147,14 @@ uint32_t
 Node::GetNodeLocalClock()
 {
     NS_LOG_FUNCTION(this);
-    m_lc = Simulator::Now().GetMicroSeconds();
+    m_lc = std::max(Simulator::Now().GetMicroSeconds(), m_lc);
+    if(m_lc == Simulator::Now().GetMicroSeconds())
+    {
+#ifdef REPCL_CONFIG_H
+        // Make this a random number
+        m_lc += EPSILON / 2;
+#endif
+    }
     return m_lc;
 }
 

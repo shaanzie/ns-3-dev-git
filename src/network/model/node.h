@@ -324,7 +324,7 @@ class Node : public Object
     ProtocolHandlerList m_handlers;                       //!< Protocol handlers in the node
     DeviceAdditionListenerList m_deviceAdditionListeners; //!< Device addition listeners in the node
 
-    uint32_t m_lc;                                      //!< Local Node clock to implement local time
+    int64_t m_lc;                                         //!< Local Node clock to implement local time
     ReplayClock m_rc;                                     //!< Custom ReplayClock to test Replays
 };
 
