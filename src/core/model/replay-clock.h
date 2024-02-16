@@ -18,6 +18,9 @@
 #include <sstream>
 #include <string>
 
+
+#include "replay-config.h"
+
 /**
  * \file
  * \ingroup ReplayClock
@@ -74,7 +77,7 @@ public:
     }
 
     /** Specification constructor. */
-    inline ReplayClock(uint32_t hlc, uint32_t nodeId, std::bitset<32> offset_bitmap, std::bitset<32> offsets, uint32_t counters, uint32_t epsilon, uint32_t interval) : hlc(hlc), offset_bitmap(offset_bitmap), offsets(offsets), counters(counters), nodeId(nodeId), epsilon(epsilon), interval(interval) 
+    inline ReplayClock(uint32_t hlc, uint32_t nodeId, std::bitset<NUM_PROCS> offset_bitmap, std::bitset<NUM_PROCS*MAX_OFFSET_SIZE> offsets, uint32_t counters, uint32_t epsilon, uint32_t interval) : hlc(hlc), offset_bitmap(offset_bitmap), offsets(offsets), counters(counters), nodeId(nodeId), epsilon(epsilon), interval(interval) 
     {}    
 
 
@@ -128,13 +131,13 @@ public:
     }
 
 
-    inline std::bitset<32> GetBitmap() const 
+    inline std::bitset<NUM_PROCS> GetBitmap() const 
     {
         return offset_bitmap;
     }
 
 
-    inline std::bitset<32> GetOffsets() const
+    inline std::bitset<NUM_PROCS*MAX_OFFSET_SIZE> GetOffsets() const
     {
         return offsets;
     }
@@ -159,7 +162,7 @@ public:
     inline uint32_t GetCounterSize();
 
 
-    inline uint32_t GetClockSize();
+    uint32_t GetClockSize();
 
 
     void SetNodeId(uint32_t nodeId_) 
@@ -174,7 +177,7 @@ public:
     }
 
 
-    void SetOffsets(std::bitset<32> offsets_) 
+    void SetOffsets(std::bitset<NUM_PROCS*MAX_OFFSET_SIZE> offsets_) 
     {
         offsets = offsets_;
     }
@@ -185,7 +188,7 @@ public:
      * \param [in] index The index of the offset to set
      * \param [in] newOffset The new offset to set the index to
     */
-    void SetOffsetAtIndex(uint32_t index, uint8_t newOffset);
+    void SetOffsetAtIndex(uint32_t index, uint32_t newOffset);
 
 
     void SetCounters(uint32_t counters_)
@@ -194,7 +197,7 @@ public:
     }
 
 
-    void SetOffsetBitmap(std::bitset<32> offset_bitmap_)
+    void SetOffsetBitmap(std::bitset<NUM_PROCS> offset_bitmap_)
     {
         offset_bitmap = offset_bitmap_;
     }
@@ -267,10 +270,8 @@ public:
 
     /**
      * PrintClock operation to print the clock.
-     * \param [in] os OutputStream to print the clock to.
     */
-    void PrintClock(std::ostream& os);
-
+    void PrintClock();
 
     /**
      * Serialize operation to make a uint8_t buffer for the packet.
@@ -285,13 +286,13 @@ public:
 
 
 private:
-    uint32_t                 hlc;               //!< Hybrid Logical Clock for topmost level
-    std::bitset<32>          offset_bitmap;     //!< Offset bitmap that stores true for nodes whose offsets are being tracked
-    std::bitset<32>          offsets;           //!< Value of offsets for the nodes where bitmap denotes true
-    uint32_t                 counters;          //!< Counters for events occuring within an interval
-    uint32_t                 nodeId;            //!< NodeID of the current node
-    uint32_t                 epsilon;           //!< Maximum acceptable clock skew
-    uint32_t                 interval;          //!< Discretizing the standard flow of time to save space
+    uint32_t                                    hlc;               //!< Hybrid Logical Clock for topmost level
+    std::bitset<NUM_PROCS>                      offset_bitmap;     //!< Offset bitmap that stores true for nodes whose offsets are being tracked
+    std::bitset<NUM_PROCS*MAX_OFFSET_SIZE>      offsets;           //!< Value of offsets for the nodes where bitmap denotes true
+    uint32_t                                    counters;          //!< Counters for events occuring within an interval
+    uint32_t                                    nodeId;            //!< NodeID of the current node
+    uint32_t                                    epsilon;           //!< Maximum acceptable clock skew
+    uint32_t                                    interval;          //!< Discretizing the standard flow of time to save space
 
 };
 

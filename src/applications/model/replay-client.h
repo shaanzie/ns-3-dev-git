@@ -26,6 +26,8 @@
 #include "ns3/event-id.h"
 #include "ns3/ipv4-address.h"
 #include "ns3/ptr.h"
+#include "ns3/core-module.h"
+#include "replay-header.h"
 #include <ns3/traced-callback.h>
 
 namespace ns3
@@ -93,7 +95,9 @@ class ReplayClient : public Application
 
 
     void ProcessPacket(Ptr<Packet> packet);
-    uint32_t CreateReplayPacket(uint8_t* buffer);
+    ReplayHeader CreateReplayHeader();
+
+    void PrintClock(ReplayClock rc);
 
     uint32_t m_count; //!< Maximum number of packets the application will send
     Time m_interval;  //!< Packet inter-send time

@@ -19,7 +19,7 @@
  */
 #include "replay-client.h"
 
-#include "seq-ts-header.h"
+#include "replay-header.h"
 
 #include "ns3/inet-socket-address.h"
 #include "ns3/inet6-socket-address.h"
@@ -41,6 +41,16 @@ namespace ns3
 NS_LOG_COMPONENT_DEFINE("ReplayClient");
 
 NS_OBJECT_ENSURE_REGISTERED(ReplayClient);
+
+void 
+ReplayClient::PrintClock(ReplayClock rc)
+{
+    NS_LOG_INFO("-----------------------------------------------------------");
+    NS_LOG_INFO("HLC: " << rc.GetHLC());
+    NS_LOG_INFO("Bitmap: " << rc.GetBitmap());
+    NS_LOG_INFO("Offsets: " << rc.GetOffsets());
+    NS_LOG_INFO("Counters: " << rc.GetCounters());
+}
 
 TypeId
 ReplayClient::GetTypeId()
@@ -209,11 +219,12 @@ ReplayClient::Send()
     m_socket->GetSockName(from);
     m_socket->GetPeerName(to);
 
-    uint8_t *repcl_buf = new uint8_t[64];
+    ReplayHeader repheader = CreateReplayHeader();
 
-    uint32_t size = CreateReplayPacket(repcl_buf);
+    NS_ABORT_IF(m_size < repheader.GetSerializedSize());
+    Ptr<Packet> p = Create<Packet>(m_size - repheader.GetSerializedSize());
 
-    Ptr<Packet> p = Create<Packet>(repcl_buf, size);
+    p->AddHeader(repheader);
 
     if ((m_socket->Send(p)) >= 0)
     {
@@ -221,7 +232,8 @@ ReplayClient::Send()
         m_totalTx += p->GetSize();
         
         NS_LOG_INFO("TraceDelay TX " << p->GetSize() << " bytes to " << m_peerAddress << " Uid: "
-                                     << p->GetUid() << " Time: " << (Simulator::Now()).As(Time::S));
+                                     << p->GetUid() << " from " 
+                                     << GetNode()->GetId() << " at Time: " << (Simulator::Now()).As(Time::S));
                                      
     }
     
@@ -236,8 +248,6 @@ ReplayClient::Send()
         m_sendEvent = Simulator::Schedule(m_interval, &ReplayClient::Send, this);
     }
 
-    delete[] repcl_buf;
-
 }
 
 void
@@ -249,6 +259,7 @@ ReplayClient::HandleRead(Ptr<Socket> socket)
     Address localAddress;
     while ((packet = socket->RecvFrom(from)))
     {
+
         socket->GetSockName(localAddress);
 
         if (packet->GetSize() > 0)
@@ -259,29 +270,48 @@ ReplayClient::HandleRead(Ptr<Socket> socket)
                                               << " Uid: " << packet->GetUid() << " RXtime: " << Simulator::Now());
 
             ProcessPacket(packet);
+
+            ReplayHeader repheader = CreateReplayHeader();
+
+            Ptr<Packet> p = Create<Packet>(m_size - repheader.GetSerializedSize());
+
+            p->AddHeader(repheader);
+
+            if ((socket->SendTo(p, 0, from)) >= 0)
+            {
+                
+                NS_LOG_INFO("TraceDelay TX " << p->GetSize() << " bytes to " << from << " Uid: "
+                                            << p->GetUid() << " from node " << GetNode()->GetId() 
+                                            << " at Time: " << (Simulator::Now()).As(Time::S));
+                                            
+            }
+            
+            else
+            {
+                NS_LOG_INFO("Error while sending " << m_size << " bytes to " << from);
+            }
+
         }
-        
     }
 }
 
-uint32_t
-ReplayClient::CreateReplayPacket(uint8_t* buffer)
+ReplayHeader
+ReplayClient::CreateReplayHeader()
 {
 
     Ptr<Node> client = GetNode();
+
     ReplayClock client_rc = client->GetReplayClock();
 
-#ifdef REPCL_CONFIG_H
-    client_rc.SendLocal(GetNode()->GetNodeLocalClock() / INTERVAL);
-#else
-    client_rc.SendLocal(GetNode()->GetNodeLocalClock() / 10);
-#endif
+    client_rc.SendLocal(GetNode()->GetNodeLocalClock());
     
     client->SetReplayClock(client_rc);
 
-    client_rc.Serialize(buffer);
+    ReplayHeader repheader(client_rc);
 
-    return client_rc.GetClockSize();
+    // repheader.Print(std::cout);
+
+    return repheader;
 
 }
 
@@ -289,34 +319,27 @@ void
 ReplayClient::ProcessPacket(Ptr<Packet> packet)
 {
 
-    uint8_t* buffer = new uint8_t[64];
-
-    packet->CopyData(buffer, 512);
-
     Ptr<Node> server = GetNode();
     ReplayClock server_rc = server->GetReplayClock();
 
-    uint32_t* integers = new uint32_t[4];
+    ReplayHeader repheader;
+    packet->RemoveHeader(repheader);
 
-    server_rc.Deserialize(buffer, integers);
+    // repheader.Print(std::cout);
 
-#ifdef REPCL_CONFIG_H
-    ReplayClock m_rc(integers[0], server->GetId(), integers[1], integers[2], integers[3], EPSILON, INTERVAL);
-#else
-    ReplayClock m_rc(integers[0], server->GetId(), integers[1], integers[2], integers[3], 20, 10);
-#endif
+    ReplayClock m_rc(
+        repheader.GetReplayClock().GetHLC(),
+        repheader.GetReplayClock().GetNodeId(),
+        repheader.GetReplayClock().GetBitmap(),
+        repheader.GetReplayClock().GetOffsets(),
+        repheader.GetReplayClock().GetCounters(),
+        EPSILON,
+        INTERVAL
+    );
 
-#ifdef REPCL_CONFIG_H
-    server_rc.Recv(m_rc, GetNode()->GetNodeLocalClock() / INTERVAL);
-#else
-    server_rc.Recv(m_rc, GetNode()->GetNodeLocalClock() / 10);
-#endif
+    server_rc.Recv(m_rc, GetNode()->GetNodeLocalClock());
 
     server->SetReplayClock(server_rc);
-
-    delete[] buffer;
-    delete[] integers;
-
 }
 
 uint64_t
@@ -324,5 +347,7 @@ ReplayClient::GetTotalTx() const
 {
     return m_totalTx;
 }
+
+
 
 } // Namespace ns3

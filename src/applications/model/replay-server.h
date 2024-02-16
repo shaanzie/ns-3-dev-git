@@ -23,11 +23,13 @@
 #define REPLAY_SERVER_H
 
 #include "packet-loss-counter.h"
+#include "replay-header.h"
 
 #include "ns3/address.h"
 #include "ns3/application.h"
 #include "ns3/event-id.h"
 #include "ns3/ptr.h"
+#include "ns3/core-module.h"
 #include "ns3/traced-callback.h"
 
 namespace ns3
@@ -99,7 +101,8 @@ class ReplayServer : public Application
     void HandleRead(Ptr<Socket> socket);
 
     void ProcessPacket(Ptr<Packet> packet);
-    uint32_t CreateReplayPacket(uint8_t* buffer);
+    ReplayHeader CreateReplayHeader();
+    void PrintClock(ReplayClock rc);
 
     uint16_t m_port;                 //!< Port on which we listen for incoming packets.
     Ptr<Socket> m_socket;            //!< IPv4 Socket

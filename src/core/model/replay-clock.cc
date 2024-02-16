@@ -15,6 +15,7 @@
 #include <vector>
 #include <iostream>
 #include <math.h>
+#include <unistd.h>
 
 /**
  * \file
@@ -30,7 +31,11 @@ NS_LOG_COMPONENT_DEFINE("ReplayClock");
 uint32_t 
 ReplayClock::GetOffsetSize()
 {
-    return (offset_bitmap.count()*32)/8;
+#ifdef REPCL_CONFIG_H
+    return (offset_bitmap.count() * MAX_OFFSET_SIZE) / 8;
+#else
+    return (offset_bitmap.count() * 32) / 8;
+#endif
 }
 
 uint32_t 
@@ -48,6 +53,9 @@ ReplayClock::GetClockSize()
 void 
 ReplayClock::SendLocal(uint32_t node_hlc)
 {
+
+    // std::cout << "--------------------------SEND--------------------------" << std::endl;
+    // PrintClock();
 
     uint32_t new_hlc = std::max(hlc, node_hlc);
     uint32_t new_offset = new_hlc - node_hlc;
@@ -71,11 +79,26 @@ ReplayClock::SendLocal(uint32_t node_hlc)
         Shift(new_hlc);
         SetOffsetAtIndex(nodeId, 0);
     }
+
+    // std::cout << "--------------------------SEND DONE!--------------------------" << std::endl;
+    // PrintClock();
+    // std::cout << "==============================================================" << std::endl;
 }
 
 void 
 ReplayClock::Recv(ReplayClock m_ReplayClock, uint32_t node_hlc)
 {
+
+    std::cout << "--------------------------RECV--------------------------" << std::endl;
+
+    std::cout << "--------------------------NODE CLOCK--------------------------" << std::endl;
+
+    PrintClock();
+
+    std::cout << "--------------------------MESSAGE CLOCK--------------------------" << std::endl;
+
+    m_ReplayClock.PrintClock();
+
     uint32_t new_hlc = std::max(hlc, m_ReplayClock.hlc);
     new_hlc = std::max(new_hlc, node_hlc);
 
@@ -108,35 +131,53 @@ ReplayClock::Recv(ReplayClock m_ReplayClock, uint32_t node_hlc)
     }
 
     *this = a;
+
+    std::cout << "--------------------------FINAL CLOCK--------------------------" << std::endl;
+
+    PrintClock();
+
+    std::cout << "--------------------------RECV DONE!--------------------------" << std::endl;
+
+    sleep(2);
 }
 
 void 
 ReplayClock::Shift(uint32_t new_hlc)
 {
+
+    if(hlc == new_hlc)
+    {
+        return;
+    }
+
+    // std::cout << "Shifting " << hlc << " to " << new_hlc << std::endl; 
+
+    offset_bitmap.set();
     uint32_t bitmap = offset_bitmap.to_ulong();
-    uint32_t index = 0;
     while(bitmap > 0)
     {
 
-        uint32_t offset_at_index = GetOffsetAtIndex(index);
-
         uint32_t pos = log2((~(bitmap ^ (~(bitmap - 1))) + 1) >> 1);
 
+        uint32_t offset_at_index = GetOffsetAtIndex(pos);
+
         uint32_t new_offset = std::min(new_hlc - (hlc - offset_at_index), epsilon);
+
+        // std::cout   << "Old offset at pos " << pos << ": " 
+        //             << offset_at_index << ", new offset: " << new_offset << std::endl;
+        // std::cout << "Epsilon: " << epsilon << std::endl;
 
         if(new_offset >= epsilon)
         {    
             offset_bitmap[pos] = 0;
-            RemoveOffsetAtIndex(index);
+            RemoveOffsetAtIndex(pos);
         }
         else
         {
-            SetOffsetAtIndex(index, new_offset);
+            SetOffsetAtIndex(pos, new_offset);
         }
 
         bitmap = bitmap & (bitmap - 1);
-
-        index++;
     }
     hlc = new_hlc;
 }
@@ -193,7 +234,7 @@ ReplayClock::GetOffsetAtIndex(uint32_t index)
     
     // cout << endl << "Extract " << 8 << " bits from position " << 4*index << endl;
 
-    std::bitset<32> offset(extract(offsets.to_ulong(), 8, 4*index));
+    std::bitset<MAX_OFFSET_SIZE> offset(extract(offsets.to_ulong(), MAX_OFFSET_SIZE, MAX_OFFSET_SIZE * index));
     
     // cout << "Offset: " << offset << endl;
 
@@ -202,19 +243,23 @@ ReplayClock::GetOffsetAtIndex(uint32_t index)
 }
 
 void 
-ReplayClock::SetOffsetAtIndex(uint32_t index, uint8_t new_offset)
+ReplayClock::SetOffsetAtIndex(uint32_t index, uint32_t new_offset)
 {
     // Convert new offset to bitset and add bitset at appropriate position
+
+    // std::cout << "To insert " << new_offset << " at pos " << index << std::endl;
     
-    std::bitset<32> offset(new_offset);
+    std::bitset<MAX_OFFSET_SIZE> offset(new_offset);
 
-    std::bitset<32> res(extract(offsets.to_ulong(), 4*index, 0));
+    std::bitset<MAX_OFFSET_SIZE*NUM_PROCS> res(extract(offsets.to_ulong(), MAX_OFFSET_SIZE*index, 0));
 
-    res |= offset.to_ulong() << index*4;
+    res |= offset.to_ulong() << index*MAX_OFFSET_SIZE;
 
-    std::bitset<32> lastpart(extract(offsets.to_ulong(), 32 - (4*(index + 1)), 4*(index + 1)));
+    std::bitset<MAX_OFFSET_SIZE*NUM_PROCS> lastpart(extract(offsets.to_ulong(), 
+                                                    MAX_OFFSET_SIZE*NUM_PROCS - (MAX_OFFSET_SIZE*(index + 1)), 
+                                                    MAX_OFFSET_SIZE*(index + 1)));
 
-    res |= lastpart << ((index+1)*4);
+    res |= lastpart << ((index+1)*MAX_OFFSET_SIZE);
 
     offsets = res;
 
@@ -224,11 +269,13 @@ void
 ReplayClock::RemoveOffsetAtIndex(uint32_t index)
 {
     // Remove and squash the bitset of given index through index + 4
-    std::bitset<32> res(extract(offsets.to_ulong(), 4*index, 0));
+    std::bitset<MAX_OFFSET_SIZE * NUM_PROCS> res(extract(offsets.to_ulong(), MAX_OFFSET_SIZE*index, 0));
     
-    std::bitset<32> lastpart(extract(offsets.to_ulong(), 32 - (4*(index + 1)), 4*(index + 1)));
+    std::bitset<MAX_OFFSET_SIZE * NUM_PROCS> lastpart(extract(offsets.to_ulong(),
+                                                        MAX_OFFSET_SIZE * NUM_PROCS - (MAX_OFFSET_SIZE*(index + 1)),
+                                                        MAX_OFFSET_SIZE*(index + 1)));
 
-    res |= lastpart << ((index+1)*4);
+    res |= lastpart << ((index+1)*MAX_OFFSET_SIZE);
 
     offsets = res;
 
@@ -278,6 +325,12 @@ ReplayClock::Serialize(uint8_t* buffer)
         buffer[i * 16 + 15] = integers[i] & 0xFF;
     }
 
+    // std::cout << "Serialized: " << std::endl;
+    // std::cout << "HLC: " << integers[0] << std::endl;
+    // std::cout << "Bitmap: " << integers[1] << std::endl;
+    // std::cout << "Offsets: " << integers[2] << std::endl;
+    // std::cout << "Counters: " << integers[3] << std::endl;
+
 }
 
 void
@@ -291,6 +344,30 @@ ReplayClock::Deserialize(uint8_t* buffer, uint32_t* integers)
                       (static_cast<uint32_t>(buffer[i * 16 + 2]) << 8) |
                       static_cast<uint32_t>(buffer[i * 16 + 3]);
     }
+
+    // std::cout << "Deserialized: " << std::endl;
+    // std::cout << "HLC: " << integers[0] << std::endl;
+    // std::cout << "Bitmap: " << integers[1] << std::endl;
+    // std::cout << "Offsets: " << integers[2] << std::endl;
+    // std::cout << "Counters: " << integers[3] << std::endl;
+
+}
+
+void 
+ReplayClock::PrintClock()
+{
+    std::cout << "NodeID: " << nodeId << std::endl;
+
+    std::cout << "HLC: " << hlc << std::endl;
+
+    for(int i = 0; i < offset_bitmap.size(); i++)
+    {
+        std::cout << "Offset for process " << i << "(" << offset_bitmap[i] << "): ";
+        std::cout << GetOffsetAtIndex(i) << std::endl;
+    }
+
+    std::cout << "Counters: " << counters << std::endl;
+
 
 }
 

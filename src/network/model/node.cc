@@ -34,6 +34,10 @@
 #include "ns3/uinteger.h"
 #include "ns3/replay-clock.h"
 
+#include <random>
+
+#include <unistd.h>
+
 namespace ns3
 {
 
@@ -106,22 +110,17 @@ void
 Node::Construct()
 {
     NS_LOG_FUNCTION(this);
+    m_id = NodeList::Add(this);
 #ifdef REPCL_CONFIG_H
+    m_lc = 0;
     m_rc = ReplayClock(
         GetNodeLocalClock() / INTERVAL,
         m_id,
-        INTERVAL,
-        DELTA
+        EPSILON,
+        INTERVAL
     );
 #else
-    m_rc = ReplayClock(
-        GetNodeLocalClock(),
-        m_id,
-        20,
-        2
-    );
 #endif
-    m_id = NodeList::Add(this);
 }
 
 Node::~Node()
@@ -147,15 +146,18 @@ uint32_t
 Node::GetNodeLocalClock()
 {
     NS_LOG_FUNCTION(this);
-    m_lc = std::max(Simulator::Now().GetMicroSeconds(), m_lc);
-    if(m_lc == Simulator::Now().GetMicroSeconds())
+    m_lc = std::max(Simulator::Now().GetMilliSeconds(), m_lc);
+    if(m_lc == Simulator::Now().GetMilliSeconds())
     {
 #ifdef REPCL_CONFIG_H
         // Make this a random number
-        m_lc += EPSILON / 2;
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_int_distribution<> dis(0, Simulator::Now().GetMilliSeconds() + EPSILON - m_lc);
+        m_lc += dis(gen);
 #endif
     }
-    return m_lc;
+    return m_lc / INTERVAL;
 }
 
 ReplayClock
