@@ -69,13 +69,13 @@ void
 ReplayHeader::Print(std::ostream& os) const
 {
     NS_LOG_FUNCTION(this << &os);
-    std::cout  << "(hlc=" << m_rc.GetHLC() 
-        << " nodeId=" << m_rc.GetNodeId() 
-        << " offset_bitmap=" << m_rc.GetBitmap() 
-        << " offsets=" << m_rc.GetOffsets() 
-        << " counters=" << m_rc.GetCounters() 
-        << ")"
-        << std::endl;
+    // std::cout  << "(hlc=" << m_rc.GetHLC() 
+    //     << " nodeId=" << m_rc.GetNodeId() 
+    //     << " offset_bitmap=" << m_rc.GetBitmap() 
+    //     << " offsets=" << m_rc.GetOffsets() 
+    //     << " counters=" << m_rc.GetCounters() 
+    //     << ")"
+    //     << std::endl;
 }
 
 uint32_t

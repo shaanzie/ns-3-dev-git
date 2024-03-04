@@ -15,6 +15,7 @@
 #include <vector>
 #include <iostream>
 #include <math.h>
+#include <algorithm>
 #include <unistd.h>
 
 /**
@@ -31,23 +32,26 @@ NS_LOG_COMPONENT_DEFINE("ReplayClock");
 uint32_t 
 ReplayClock::GetOffsetSize()
 {
-#ifdef REPCL_CONFIG_H
-    return (offset_bitmap.count() * MAX_OFFSET_SIZE) / 8;
-#else
-    return (offset_bitmap.count() * 32) / 8;
-#endif
+    uint32_t max_offset = -1;
+    for(int i = 0; i < offset_bitmap.size(); i++)
+    {
+        if(offset_bitmap[i])
+            max_offset = std::max(max_offset, GetOffsetAtIndex(i));
+    }
+    return log2(max_offset) / 8;
+
 }
 
 uint32_t 
 ReplayClock::GetCounterSize()
 {
-    return sizeof(counters);
+    return log2(counters) / 8;
 }
 
 uint32_t 
 ReplayClock::GetClockSize()
 {
-    return GetOffsetSize() + GetCounterSize() + sizeof(hlc);
+    return GetOffsetSize() + GetCounterSize() + (log2(hlc) / 8);
 }
 
 void 
@@ -89,15 +93,15 @@ void
 ReplayClock::Recv(ReplayClock m_ReplayClock, uint32_t node_hlc)
 {
 
-    std::cout << "--------------------------RECV--------------------------" << std::endl;
+    // std::cout << "--------------------------RECV--------------------------" << std::endl;
 
-    std::cout << "--------------------------NODE CLOCK--------------------------" << std::endl;
+    // std::cout << "--------------------------NODE CLOCK--------------------------" << std::endl;
 
-    PrintClock();
+    // PrintClock();
 
-    std::cout << "--------------------------MESSAGE CLOCK--------------------------" << std::endl;
+    // std::cout << "--------------------------MESSAGE CLOCK--------------------------" << std::endl;
 
-    m_ReplayClock.PrintClock();
+    // m_ReplayClock.PrintClock();
 
     uint32_t new_hlc = std::max(hlc, m_ReplayClock.hlc);
     new_hlc = std::max(new_hlc, node_hlc);
@@ -132,13 +136,13 @@ ReplayClock::Recv(ReplayClock m_ReplayClock, uint32_t node_hlc)
 
     *this = a;
 
-    std::cout << "--------------------------FINAL CLOCK--------------------------" << std::endl;
+    // std::cout << "--------------------------FINAL CLOCK--------------------------" << std::endl;
 
-    PrintClock();
+    // PrintClock();
 
-    std::cout << "--------------------------RECV DONE!--------------------------" << std::endl;
+    // std::cout << "--------------------------RECV DONE!--------------------------" << std::endl;
 
-    sleep(2);
+    // sleep(2);
 }
 
 void 

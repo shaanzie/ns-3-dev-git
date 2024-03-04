@@ -1,9 +1,7 @@
-#define REPCL_CONFIG_H 1
-
-#define NUM_PROCS 3
-#define EPSILON 4000
-#define INTERVAL 10
-#define ALPHA 5
-#define DELTA 2
-
-#define MAX_OFFSET_SIZE 12
+#define REPCL_CONFIG_H
+#define NUM_PROCS 32
+#define EPSILON 32
+#define INTERVAL 32
+#define ALPHA 50
+#define DELTA 16
+#define MAX_OFFSET_SIZE 6

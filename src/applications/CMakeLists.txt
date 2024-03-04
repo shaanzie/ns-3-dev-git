@@ -15,6 +15,7 @@ build_lib(
     model/packet-sink.cc
     model/replay-client.cc
     model/replay-server.cc  
+    model/replay-client-server.cc  
     model/replay-header.cc    
     model/seq-ts-echo-header.cc
     model/seq-ts-header.cc
@@ -44,6 +45,7 @@ build_lib(
     model/replay-client.h
     model/replay-server.h
     model/replay-header.h
+    model/replay-client-server.h
     model/seq-ts-echo-header.h
     model/seq-ts-header.h
     model/seq-ts-size-header.h
