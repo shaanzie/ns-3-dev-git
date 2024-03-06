@@ -275,13 +275,20 @@ ReplayClientServer::CreateReplayHeader()
 
   NS_LOG_INFO
   (
+    client_rc.GetHLC() << "," <<
+    client_rc.GetBitmap() << "," <<
+    client_rc.GetOffsets() << "," <<
+    client_rc.GetCounters() << "," <<
     NUM_PROCS << ',' <<
     EPSILON << ',' <<
     INTERVAL << ',' <<
     DELTA << "," <<
     ALPHA << ',' <<
     MAX_OFFSET_SIZE << "," <<
-    client_rc.GetClockSize()
+    client_rc.GetOffsetSize() << "," <<
+    client_rc.GetCounterSize() << "," <<
+    client_rc.GetClockSize() << "," <<
+    client_rc.GetMaxOffset()
   );
 
   return repheader;
@@ -316,13 +323,20 @@ ReplayClientServer::ProcessPacket(Ptr<Packet> packet)
 
   NS_LOG_INFO
   (
+    server_rc.GetHLC() << "," <<
+    server_rc.GetBitmap() << "," <<
+    server_rc.GetOffsets() << "," <<
+    server_rc.GetCounters() << "," <<
     NUM_PROCS << ',' <<
     EPSILON << ',' <<
     INTERVAL << ',' <<
     DELTA << "," <<
     ALPHA << ',' <<
     MAX_OFFSET_SIZE << "," <<
-    server_rc.GetClockSize()
+    server_rc.GetOffsetSize() << "," <<
+    server_rc.GetCounterSize() << "," <<
+    server_rc.GetClockSize() << "," <<
+    server_rc.GetMaxOffset()
   );
 
 }

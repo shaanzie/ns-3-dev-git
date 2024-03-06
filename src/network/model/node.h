@@ -25,6 +25,7 @@
 #include "ns3/callback.h"
 #include "ns3/object.h"
 #include "ns3/ptr.h"
+#include "ns3/config-store.h"
 #include "ns3/replay-clock.h"
 
 #include <vector>

@@ -32,26 +32,35 @@ NS_LOG_COMPONENT_DEFINE("ReplayClock");
 uint32_t 
 ReplayClock::GetOffsetSize()
 {
-    uint32_t max_offset = -1;
+    return ((offset_bitmap.count() * MAX_OFFSET_SIZE) + 1) / 8;
+}
+
+uint32_t 
+ReplayClock::GetMaxOffset()
+{   
+    uint32_t max_offset = 0;
     for(int i = 0; i < offset_bitmap.size(); i++)
     {
         if(offset_bitmap[i])
+        {
             max_offset = std::max(max_offset, GetOffsetAtIndex(i));
+        }
+            
     }
-    return log2(max_offset) / 8;
 
+    return max_offset;
 }
 
 uint32_t 
 ReplayClock::GetCounterSize()
 {
-    return log2(counters) / 8;
+    return (log2(counters) + 1) / 8;
 }
 
 uint32_t 
 ReplayClock::GetClockSize()
 {
-    return GetOffsetSize() + GetCounterSize() + (log2(hlc) / 8);
+    return GetOffsetSize() + GetCounterSize() + ((log2(hlc) + 1) / 8);
 }
 
 void 

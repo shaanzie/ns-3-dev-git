@@ -49,6 +49,7 @@ build_lib(
     ${gtk3_headers}
     model/file-config.h
     model/config-store.h
+    model/replay-config.h
   LIBRARIES_TO_LINK
     ${libcore}
     ${xml2_libraries}

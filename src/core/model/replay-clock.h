@@ -12,14 +12,13 @@
 #ifndef REPCL_H
 #define REPCL_H
 
+#include "ns3/replay-config.h"
+
 #include <vector>
 #include <iostream>
 #include <bitset>
 #include <sstream>
 #include <string>
-
-
-#include "replay-config.h"
 
 /**
  * \file
@@ -156,13 +155,15 @@ public:
     }
 
 
-    inline uint32_t GetOffsetSize();
+    uint32_t GetOffsetSize();
 
 
-    inline uint32_t GetCounterSize();
+    uint32_t GetCounterSize();
 
 
     uint32_t GetClockSize();
+
+    uint32_t GetMaxOffset();
 
 
     void SetNodeId(uint32_t nodeId_) 
