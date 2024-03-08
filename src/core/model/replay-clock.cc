@@ -102,15 +102,15 @@ void
 ReplayClock::Recv(ReplayClock m_ReplayClock, uint32_t node_hlc)
 {
 
-    // std::cout << "--------------------------RECV--------------------------" << std::endl;
+    std::cout << "--------------------------RECV--------------------------" << std::endl;
 
-    // std::cout << "--------------------------NODE CLOCK--------------------------" << std::endl;
+    std::cout << "--------------------------NODE CLOCK--------------------------" << std::endl;
 
-    // PrintClock();
+    PrintClock();
 
-    // std::cout << "--------------------------MESSAGE CLOCK--------------------------" << std::endl;
+    std::cout << "--------------------------MESSAGE CLOCK--------------------------" << std::endl;
 
-    // m_ReplayClock.PrintClock();
+    m_ReplayClock.PrintClock();
 
     uint32_t new_hlc = std::max(hlc, m_ReplayClock.hlc);
     new_hlc = std::max(new_hlc, node_hlc);
@@ -145,27 +145,20 @@ ReplayClock::Recv(ReplayClock m_ReplayClock, uint32_t node_hlc)
 
     *this = a;
 
-    // std::cout << "--------------------------FINAL CLOCK--------------------------" << std::endl;
+    std::cout << "--------------------------FINAL CLOCK--------------------------" << std::endl;
 
-    // PrintClock();
+    PrintClock();
 
-    // std::cout << "--------------------------RECV DONE!--------------------------" << std::endl;
+    std::cout << "--------------------------RECV DONE!--------------------------" << std::endl;
 
-    // sleep(2);
+    sleep(2);
 }
 
 void 
 ReplayClock::Shift(uint32_t new_hlc)
 {
-
-    if(hlc == new_hlc)
-    {
-        return;
-    }
-
+    
     // std::cout << "Shifting " << hlc << " to " << new_hlc << std::endl; 
-
-    offset_bitmap.set();
     uint32_t bitmap = offset_bitmap.to_ulong();
     while(bitmap > 0)
     {
@@ -264,12 +257,12 @@ ReplayClock::SetOffsetAtIndex(uint32_t index, uint32_t new_offset)
     
     std::bitset<MAX_OFFSET_SIZE> offset(new_offset);
 
-    std::bitset<MAX_OFFSET_SIZE*NUM_PROCS> res(extract(offsets.to_ulong(), MAX_OFFSET_SIZE*index, 0));
+    std::bitset<64> res(extract(offsets.to_ulong(), MAX_OFFSET_SIZE*index, 0));
 
     res |= offset.to_ulong() << index*MAX_OFFSET_SIZE;
 
-    std::bitset<MAX_OFFSET_SIZE*NUM_PROCS> lastpart(extract(offsets.to_ulong(), 
-                                                    MAX_OFFSET_SIZE*NUM_PROCS - (MAX_OFFSET_SIZE*(index + 1)), 
+    std::bitset<64> lastpart(extract(offsets.to_ulong(), 
+                                                    64 - (MAX_OFFSET_SIZE*(index + 1)), 
                                                     MAX_OFFSET_SIZE*(index + 1)));
 
     res |= lastpart << ((index+1)*MAX_OFFSET_SIZE);
@@ -282,10 +275,10 @@ void
 ReplayClock::RemoveOffsetAtIndex(uint32_t index)
 {
     // Remove and squash the bitset of given index through index + 4
-    std::bitset<MAX_OFFSET_SIZE * NUM_PROCS> res(extract(offsets.to_ulong(), MAX_OFFSET_SIZE*index, 0));
+    std::bitset<64> res(extract(offsets.to_ulong(), MAX_OFFSET_SIZE*index, 0));
     
-    std::bitset<MAX_OFFSET_SIZE * NUM_PROCS> lastpart(extract(offsets.to_ulong(),
-                                                        MAX_OFFSET_SIZE * NUM_PROCS - (MAX_OFFSET_SIZE*(index + 1)),
+    std::bitset<64> lastpart(extract(offsets.to_ulong(),
+                                                        64 - (MAX_OFFSET_SIZE*(index + 1)),
                                                         MAX_OFFSET_SIZE*(index + 1)));
 
     res |= lastpart << ((index+1)*MAX_OFFSET_SIZE);

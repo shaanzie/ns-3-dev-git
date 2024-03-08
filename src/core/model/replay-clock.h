@@ -76,7 +76,7 @@ public:
     }
 
     /** Specification constructor. */
-    inline ReplayClock(uint32_t hlc, uint32_t nodeId, std::bitset<NUM_PROCS> offset_bitmap, std::bitset<NUM_PROCS*MAX_OFFSET_SIZE> offsets, uint32_t counters, uint32_t epsilon, uint32_t interval) : hlc(hlc), offset_bitmap(offset_bitmap), offsets(offsets), counters(counters), nodeId(nodeId), epsilon(epsilon), interval(interval) 
+    inline ReplayClock(uint32_t hlc, uint32_t nodeId, std::bitset<NUM_PROCS> offset_bitmap, std::bitset<64> offsets, uint32_t counters, uint32_t epsilon, uint32_t interval) : hlc(hlc), offset_bitmap(offset_bitmap), offsets(offsets), counters(counters), nodeId(nodeId), epsilon(epsilon), interval(interval) 
     {}    
 
 
@@ -136,7 +136,7 @@ public:
     }
 
 
-    inline std::bitset<NUM_PROCS*MAX_OFFSET_SIZE> GetOffsets() const
+    inline std::bitset<64> GetOffsets() const
     {
         return offsets;
     }
@@ -178,7 +178,7 @@ public:
     }
 
 
-    void SetOffsets(std::bitset<NUM_PROCS*MAX_OFFSET_SIZE> offsets_) 
+    void SetOffsets(std::bitset<64> offsets_) 
     {
         offsets = offsets_;
     }
@@ -289,7 +289,7 @@ public:
 private:
     uint32_t                                    hlc;               //!< Hybrid Logical Clock for topmost level
     std::bitset<NUM_PROCS>                      offset_bitmap;     //!< Offset bitmap that stores true for nodes whose offsets are being tracked
-    std::bitset<NUM_PROCS*MAX_OFFSET_SIZE>      offsets;           //!< Value of offsets for the nodes where bitmap denotes true
+    std::bitset<64>      offsets;           //!< Value of offsets for the nodes where bitmap denotes true
     uint32_t                                    counters;          //!< Counters for events occuring within an interval
     uint32_t                                    nodeId;            //!< NodeID of the current node
     uint32_t                                    epsilon;           //!< Maximum acceptable clock skew

@@ -141,8 +141,13 @@ ReplayClientServer::StartApplication()
   {
     TypeId tid = TypeId::LookupByName("ns3::UdpSocketFactory");
     m_socket = Socket::CreateSocket(GetNode(), tid);
-    InetSocketAddress local = InetSocketAddress(Ipv4Address::GetAny(), m_peerPort);
-    if (m_socket->Bind(local) == -1)
+    InetSocketAddress local = InetSocketAddress(Ipv4Address::ConvertFrom(m_peerAddresses[GetNode()->GetId()]), m_peerPort);
+    uint32_t flag = m_socket->Bind(local);
+    
+    Address sockaddress;
+    m_socket->GetSockName(sockaddress);
+
+    if (flag == -1)
     {
       NS_FATAL_ERROR("Failed to bind socket");
     }
@@ -172,11 +177,10 @@ ReplayClientServer::Send()
 
   Address peerAddress = GetRandomIP();
 
-  if (m_socket->Bind() == -1)
+  if(m_socket->Connect(InetSocketAddress(Ipv4Address::ConvertFrom(peerAddress), m_peerPort)) != 0)
   {
-      NS_FATAL_ERROR("Failed to bind socket");
+    NS_FATAL_ERROR("Connect failed!");
   }
-  m_socket->Connect(InetSocketAddress(Ipv4Address::ConvertFrom(peerAddress), m_peerPort));
 
   NS_ASSERT(m_sendEvent.IsExpired());
 
@@ -184,6 +188,8 @@ ReplayClientServer::Send()
   Address to;
   m_socket->GetSockName(from);
   m_socket->GetPeerName(to);
+
+  NS_LOG_INFO(InetSocketAddress::ConvertFrom(to).GetIpv4() << ":" << InetSocketAddress::ConvertFrom(to).GetPort());
 
   ReplayHeader repheader = CreateReplayHeader();
 
@@ -198,9 +204,9 @@ ReplayClientServer::Send()
     m_totalTx += p->GetSize();
     
     NS_LOG_DEBUG
-    (                             "Node: " << GetNode()->GetId() 
+    (                             "Node: " << InetSocketAddress::ConvertFrom(from).GetIpv4()
                                   << " sent " << p->GetSize() 
-                                  << " bytes to " << to
+                                  << " bytes to " << InetSocketAddress::ConvertFrom(to).GetIpv4()
                                   << " at Time: " << (Simulator::Now()).As(Time::S)
     );
                                     
@@ -237,15 +243,17 @@ ReplayClientServer::Recv(Ptr<Socket> socket)
   Ptr<Packet> packet;
   Address from;
   Address localAddress;
+  
   while ((packet = socket->RecvFrom(from)))
   {
-    socket->GetSockName(localAddress);
 
+    socket->GetSockName(localAddress);
+  
     if (packet->GetSize() > 0)
     {
       uint32_t receivedSize = packet->GetSize();
       NS_LOG_DEBUG
-      (                             "Node: " << GetNode()->GetId() 
+      (                             "Node: " << InetSocketAddress::ConvertFrom(localAddress).GetIpv4() 
                                     << " received "       << receivedSize 
                                     << " bytes from " << InetSocketAddress::ConvertFrom(from).GetIpv4()
                                     << " RXtime: "    << Simulator::Now()
@@ -273,23 +281,23 @@ ReplayClientServer::CreateReplayHeader()
 
   // repheader.Print(std::cout);
 
-  NS_LOG_INFO
-  (
-    client_rc.GetHLC() << "," <<
-    client_rc.GetBitmap() << "," <<
-    client_rc.GetOffsets() << "," <<
-    client_rc.GetCounters() << "," <<
-    NUM_PROCS << ',' <<
-    EPSILON << ',' <<
-    INTERVAL << ',' <<
-    DELTA << "," <<
-    ALPHA << ',' <<
-    MAX_OFFSET_SIZE << "," <<
-    client_rc.GetOffsetSize() << "," <<
-    client_rc.GetCounterSize() << "," <<
-    client_rc.GetClockSize() << "," <<
-    client_rc.GetMaxOffset()
-  );
+  // NS_LOG_INFO
+  // (
+  //   client_rc.GetHLC() << "," <<
+  //   client_rc.GetBitmap() << "," <<
+  //   client_rc.GetOffsets() << "," <<
+  //   client_rc.GetCounters() << "," <<
+  //   NUM_PROCS << ',' <<
+  //   EPSILON << ',' <<
+  //   INTERVAL << ',' <<
+  //   DELTA << "," <<
+  //   ALPHA << ',' <<
+  //   MAX_OFFSET_SIZE << "," <<
+  //   client_rc.GetOffsetSize() << "," <<
+  //   client_rc.GetCounterSize() << "," <<
+  //   client_rc.GetClockSize() << "," <<
+  //   client_rc.GetMaxOffset()
+  // );
 
   return repheader;
 
@@ -321,23 +329,23 @@ ReplayClientServer::ProcessPacket(Ptr<Packet> packet)
 
   server->SetReplayClock(server_rc);
 
-  NS_LOG_INFO
-  (
-    server_rc.GetHLC() << "," <<
-    server_rc.GetBitmap() << "," <<
-    server_rc.GetOffsets() << "," <<
-    server_rc.GetCounters() << "," <<
-    NUM_PROCS << ',' <<
-    EPSILON << ',' <<
-    INTERVAL << ',' <<
-    DELTA << "," <<
-    ALPHA << ',' <<
-    MAX_OFFSET_SIZE << "," <<
-    server_rc.GetOffsetSize() << "," <<
-    server_rc.GetCounterSize() << "," <<
-    server_rc.GetClockSize() << "," <<
-    server_rc.GetMaxOffset()
-  );
+  // NS_LOG_INFO
+  // (
+  //   server_rc.GetHLC() << "," <<
+  //   server_rc.GetBitmap() << "," <<
+  //   server_rc.GetOffsets() << "," <<
+  //   server_rc.GetCounters() << "," <<
+  //   NUM_PROCS << ',' <<
+  //   EPSILON << ',' <<
+  //   INTERVAL << ',' <<
+  //   DELTA << "," <<
+  //   ALPHA << ',' <<
+  //   MAX_OFFSET_SIZE << "," <<
+  //   server_rc.GetOffsetSize() << "," <<
+  //   server_rc.GetCounterSize() << "," <<
+  //   server_rc.GetClockSize() << "," <<
+  //   server_rc.GetMaxOffset()
+  // );
 
 }
 
