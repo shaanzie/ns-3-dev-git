@@ -171,13 +171,16 @@ ReplayClock::Shift(uint32_t new_hlc)
 {
     
     // std::cout << "Shifting " << hlc << " to " << new_hlc << std::endl; 
+
+    int index = 0;
+
     uint32_t bitmap = offset_bitmap.to_ulong();
     while(bitmap > 0)
     {
 
-        uint32_t pos = log2((~(bitmap ^ (~(bitmap - 1))) + 1) >> 1);
+        uint32_t process_id = log2((~(bitmap ^ (~(bitmap - 1))) + 1) >> 1);
 
-        uint32_t offset_at_index = GetOffsetAtIndex(pos);
+        uint32_t offset_at_index = GetOffsetAtIndex(index);
 
         uint32_t new_offset = std::min(new_hlc - (hlc - offset_at_index), epsilon);
 
@@ -187,15 +190,16 @@ ReplayClock::Shift(uint32_t new_hlc)
 
         if(new_offset >= epsilon)
         {    
-            offset_bitmap[pos] = 0;
-            RemoveOffsetAtIndex(pos);
+            offset_bitmap[process_id] = 0;
+            RemoveOffsetAtIndex(index);
         }
         else
         {
-            SetOffsetAtIndex(pos, new_offset);
+            SetOffsetAtIndex(index, new_offset);
         }
 
         bitmap = bitmap & (bitmap - 1);
+        index++;
     }
     hlc = new_hlc;
 }
