@@ -48,7 +48,7 @@ main(int argc, char* argv[])
     // for selected modules; the below lines suggest how to do this
     //
     LogComponentEnable ("ReplaySimulator", LOG_LEVEL_INFO);
-    LogComponentEnable ("ReplayClientServer", LOG_LEVEL_DEBUG);
+    LogComponentEnable ("ReplayClientServer", LOG_LEVEL_INFO);
 
     NS_LOG_INFO
     (

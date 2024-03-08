@@ -189,7 +189,7 @@ ReplayClientServer::Send()
   m_socket->GetSockName(from);
   m_socket->GetPeerName(to);
 
-  NS_LOG_INFO(InetSocketAddress::ConvertFrom(to).GetIpv4() << ":" << InetSocketAddress::ConvertFrom(to).GetPort());
+  // NS_LOG_INFO(InetSocketAddress::ConvertFrom(to).GetIpv4() << ":" << InetSocketAddress::ConvertFrom(to).GetPort());
 
   ReplayHeader repheader = CreateReplayHeader();
 
@@ -232,7 +232,7 @@ ReplayClientServer::GetRandomIP()
 
   int randomIP = std::rand() % m_peerAddresses.size();
 
-  return m_peerAddresses[randomIP];
+  return m_peerAddresses[(GetNode()->GetId() + 1) % m_peerAddresses.size()];
 
 }
 
@@ -281,23 +281,23 @@ ReplayClientServer::CreateReplayHeader()
 
   // repheader.Print(std::cout);
 
-  // NS_LOG_INFO
-  // (
-  //   client_rc.GetHLC() << "," <<
-  //   client_rc.GetBitmap() << "," <<
-  //   client_rc.GetOffsets() << "," <<
-  //   client_rc.GetCounters() << "," <<
-  //   NUM_PROCS << ',' <<
-  //   EPSILON << ',' <<
-  //   INTERVAL << ',' <<
-  //   DELTA << "," <<
-  //   ALPHA << ',' <<
-  //   MAX_OFFSET_SIZE << "," <<
-  //   client_rc.GetOffsetSize() << "," <<
-  //   client_rc.GetCounterSize() << "," <<
-  //   client_rc.GetClockSize() << "," <<
-  //   client_rc.GetMaxOffset()
-  // );
+  NS_LOG_INFO
+  (
+    client_rc.GetHLC() << "," <<
+    client_rc.GetBitmap() << "," <<
+    client_rc.GetOffsets() << "," <<
+    client_rc.GetCounters() << "," <<
+    NUM_PROCS << ',' <<
+    EPSILON << ',' <<
+    INTERVAL << ',' <<
+    DELTA << "," <<
+    ALPHA << ',' <<
+    MAX_OFFSET_SIZE << "," <<
+    client_rc.GetOffsetSize() << "," <<
+    client_rc.GetCounterSize() << "," <<
+    client_rc.GetClockSize() << "," <<
+    client_rc.GetMaxOffset()
+  );
 
   return repheader;
 
@@ -329,23 +329,23 @@ ReplayClientServer::ProcessPacket(Ptr<Packet> packet)
 
   server->SetReplayClock(server_rc);
 
-  // NS_LOG_INFO
-  // (
-  //   server_rc.GetHLC() << "," <<
-  //   server_rc.GetBitmap() << "," <<
-  //   server_rc.GetOffsets() << "," <<
-  //   server_rc.GetCounters() << "," <<
-  //   NUM_PROCS << ',' <<
-  //   EPSILON << ',' <<
-  //   INTERVAL << ',' <<
-  //   DELTA << "," <<
-  //   ALPHA << ',' <<
-  //   MAX_OFFSET_SIZE << "," <<
-  //   server_rc.GetOffsetSize() << "," <<
-  //   server_rc.GetCounterSize() << "," <<
-  //   server_rc.GetClockSize() << "," <<
-  //   server_rc.GetMaxOffset()
-  // );
+  NS_LOG_INFO
+  (
+    server_rc.GetHLC() << "," <<
+    server_rc.GetBitmap() << "," <<
+    server_rc.GetOffsets() << "," <<
+    server_rc.GetCounters() << "," <<
+    NUM_PROCS << ',' <<
+    EPSILON << ',' <<
+    INTERVAL << ',' <<
+    DELTA << "," <<
+    ALPHA << ',' <<
+    MAX_OFFSET_SIZE << "," <<
+    server_rc.GetOffsetSize() << "," <<
+    server_rc.GetCounterSize() << "," <<
+    server_rc.GetClockSize() << "," <<
+    server_rc.GetMaxOffset()
+  );
 
 }
 
