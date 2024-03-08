@@ -155,6 +155,8 @@ ReplayClock::Recv(ReplayClock m_ReplayClock, uint32_t node_hlc)
 
     *this = a;
 
+    offset_bitmap[nodeId] = 1;
+
     // std::cout << "--------------------------FINAL CLOCK--------------------------" << std::endl;
 
     // PrintClock();
