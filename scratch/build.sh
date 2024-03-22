@@ -27,11 +27,11 @@ today=$(date +"%Y-%m-%d")
 
 
 for (( NUM_PROCS=32; NUM_PROCS<=64; NUM_PROCS+=32)); do
-    for (( EPSILON=100; EPSILON<=1000; EPSILON+=50)); do
-        for (( INTERVAL=1; INTERVAL<=$EPSILON; INTERVAL++)); do
-            if (( INTERVAL * EPSILON % 1000 == 0 && INTERVAL*EPSILON <= 6000 )); then
+    for (( INTERVAL=100; INTERVAL<=1000; INTERVAL+=100)); do
+        for (( EPSILON=10; EPSILON<=$INTERVAL; EPSILON+=10)); do
+            if (( INTERVAL * EPSILON % 1000 == 0 && INTERVAL*EPSILON <= 10000 )); then
                 for (( DELTA=1; DELTA<=EPSILON; DELTA*=2)); do
-                    for (( ALPHA=10; ALPHA<=320; ALPHA*=2)); do
+                    for (( ALPHA=1; ALPHA<=4; ALPHA*=2)); do
                         MAX_OFFSET_SIZE=$(num_bits $EPSILON)
 
                         echo "N.${NUM_PROCS}-E.${EPSILON}-I.${INTERVAL}-D.${DELTA}-A.${ALPHA}-M.${MAX_OFFSET_SIZE}"    

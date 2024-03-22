@@ -39,13 +39,18 @@ uint32_t
 ReplayClock::GetMaxOffset()
 {   
     uint32_t max_offset = 0;
-    for(int i = 0; i < offset_bitmap.size(); i++)
+    
+    int index = 0;
+    uint32_t bitmap = offset_bitmap.to_ulong();
+    while(bitmap > 0)
     {
-        if(offset_bitmap[i])
-        {
-            max_offset = std::max(max_offset, GetOffsetAtIndex(i));
-        }
-            
+
+        uint32_t process_id = log2((~(bitmap ^ (~(bitmap - 1))) + 1) >> 1);
+
+        max_offset = std::max(max_offset, GetOffsetAtIndex(index));
+
+        bitmap = bitmap & (bitmap - 1);
+        index++;
     }
 
     return max_offset;
@@ -83,17 +88,49 @@ ReplayClock::SendLocal(uint32_t node_hlc)
     else if(new_hlc == hlc)
     {
         new_offset = std::min(new_offset, offset_at_pid);
-        SetOffsetAtIndex(nodeId, new_offset);
+        
+        int index = 0;
+        uint32_t bitmap = offset_bitmap.to_ulong();
+        while(bitmap > 0)
+        {
+
+            uint32_t process_id = log2((~(bitmap ^ (~(bitmap - 1))) + 1) >> 1);
+            if(process_id == nodeId)
+            {
+                SetOffsetAtIndex(index, new_offset);
+                offset_bitmap[process_id] = 1;
+            }
+
+            bitmap = bitmap & (bitmap - 1);
+            index++;
+        }
+
         counters = 0;
+        offset_bitmap[nodeId] = 1;
     }
     else
     {    
         counters = 0;
         Shift(new_hlc);
-        SetOffsetAtIndex(nodeId, 0);
-    }
+        
+        int index = 0;
+        uint32_t bitmap = offset_bitmap.to_ulong();
+        while(bitmap > 0)
+        {
 
-    offset_bitmap[nodeId] = 1;
+            uint32_t process_id = log2((~(bitmap ^ (~(bitmap - 1))) + 1) >> 1);
+            if(process_id == nodeId)
+            {
+                SetOffsetAtIndex(index, 0);
+                offset_bitmap[process_id] = 1;
+            }
+
+            bitmap = bitmap & (bitmap - 1);
+            index++;
+        }
+
+        offset_bitmap[nodeId] = 1;
+    }
 
     // std::cout << "--------------------------SEND DONE!--------------------------" << std::endl;
     // PrintClock();
@@ -159,45 +196,46 @@ ReplayClock::Recv(ReplayClock m_ReplayClock, uint32_t node_hlc)
     offset_bitmap[nodeId] = 1;
     SetOffsetAtIndex(nodeId, 0);
 
-    // std::cout << "--------------------------FINAL CLOCK--------------------------" << std::endl;
+//     std::cout << "--------------------------FINAL CLOCK--------------------------" << std::endl;
 
-    // PrintClock();
+//     PrintClock();
 
-    // std::cout << "--------------------------RECV DONE!--------------------------" << std::endl;
+//     std::cout << "--------------------------RECV DONE!--------------------------" << std::endl;
 
-    // sleep(2);
+//     sleep(2);
 }
 
 void 
 ReplayClock::Shift(uint32_t new_hlc)
 {
-    
-    // std::cout << "Shifting " << hlc << " to " << new_hlc << std::endl; 
 
     int index = 0;
+
+    // std::cout << "Shifting from " << hlc << " to " << new_hlc << std::endl;
 
     uint32_t bitmap = offset_bitmap.to_ulong();
     while(bitmap > 0)
     {
 
         uint32_t process_id = log2((~(bitmap ^ (~(bitmap - 1))) + 1) >> 1);
-
+        
         uint32_t offset_at_index = GetOffsetAtIndex(index);
 
         uint32_t new_offset = std::min(new_hlc - (hlc - offset_at_index), epsilon);
 
-        // std::cout   << "Old offset at pos " << pos << ": " 
+        // std::cout   << "Old offset for process ID: " << process_id << " and index " << index <<  ": " 
         //             << offset_at_index << ", new offset: " << new_offset << std::endl;
         // std::cout << "Epsilon: " << epsilon << std::endl;
 
         if(new_offset >= epsilon)
         {    
-            offset_bitmap[process_id] = 0;
             RemoveOffsetAtIndex(index);
+            offset_bitmap[process_id] = 0;
         }
         else
         {
             SetOffsetAtIndex(index, new_offset);
+            offset_bitmap[process_id] = 1;
         }
 
         bitmap = bitmap & (bitmap - 1);
@@ -219,13 +257,17 @@ ReplayClock::MergeSameEpoch(ReplayClock m_ReplayClock)
     {
         uint32_t pos = log2((~(bitmap ^ (~(bitmap - 1))) + 1) >> 1);
         
-        uint32_t new_offset = std::min(GetOffsetAtIndex(pos), m_ReplayClock.GetOffsetAtIndex(pos));
-        SetOffsetAtIndex(index, new_offset);
+        uint32_t new_offset = std::min(GetOffsetAtIndex(index), m_ReplayClock.GetOffsetAtIndex(index));
 
-        if(GetOffsetAtIndex(pos) >= epsilon)
+        if(new_offset >= epsilon)
         {
-            offset_bitmap[pos] = 0;
             RemoveOffsetAtIndex(index); 
+            offset_bitmap[pos] = 0;
+        }
+        else
+        {
+            SetOffsetAtIndex(index, new_offset);
+            offset_bitmap[pos] = 1;
         }
         bitmap = bitmap & (bitmap - 1);
 
@@ -272,19 +314,31 @@ ReplayClock::SetOffsetAtIndex(uint32_t index, uint32_t new_offset)
 {
     // Convert new offset to bitset and add bitset at appropriate position
 
-    // std::cout << "To insert " << new_offset << " at pos " << index << std::endl;
+    // std::cout << "To insert " << new_offset << " at index " << index << std::endl;
+
+    // std::cout << "Original bitmap: " << offset_bitmap << std::endl;
     
     std::bitset<MAX_OFFSET_SIZE> offset(new_offset);
 
+    // std::cout << "New offset: " << offset << std::endl;
+
     std::bitset<64> res(extract(offsets.to_ulong(), MAX_OFFSET_SIZE*index, 0));
 
+    // std::cout << "First part: " << res << std::endl;
+
     res |= offset.to_ulong() << index*MAX_OFFSET_SIZE;
+
+    // std::cout << "Inserted offset: " << res << std::endl;
 
     std::bitset<64> lastpart(extract(offsets.to_ulong(), 
                                                     64 - (MAX_OFFSET_SIZE*(index + 1)), 
                                                     MAX_OFFSET_SIZE*(index + 1)));
 
+    // std::cout << "Last part: " << lastpart << std::endl;
+
     res |= lastpart << ((index+1)*MAX_OFFSET_SIZE);
+
+    // std::cout << "Final offsets: " << res << std::endl;
 
     offsets = res;
 
@@ -385,7 +439,9 @@ ReplayClock::PrintClock()
     std::cout   << nodeId << "," 
                 << hlc << ",[";
 
-    for(int i = 0; i < offset_bitmap.size(); i++)
+    uint32_t bitmap = offset_bitmap.to_ulong();
+    int index = 0;
+    while(bitmap > 0)   
     {
         if(offset_bitmap[i] == 0)
         {

@@ -81,7 +81,7 @@ main(int argc, char* argv[])
     CsmaHelper csma;
     csma.SetChannelAttribute("DataRate", DataRateValue(DataRate(5000000)));
 
-    csma.SetChannelAttribute("Delay", TimeValue(MilliSeconds(DELTA)));
+    csma.SetChannelAttribute("Delay", TimeValue(MicroSeconds(DELTA)));
 
     NetDeviceContainer d = csma.Install(n);
 
@@ -111,7 +111,7 @@ main(int argc, char* argv[])
 
     Time interPacketInterval = MilliSeconds(ALPHA);
 
-    for(int i = 1; i < NUM_PROCS; i++)
+    for(int i = 0; i < NUM_PROCS; i++)
     {
         Ptr<ReplayClientServer> client = new ReplayClientServer();
         client->SetPort(port);
