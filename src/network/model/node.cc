@@ -153,7 +153,7 @@ Node::GetNodeLocalClock()
         // Make this a random number
         std::random_device rd;
         std::mt19937 gen(rd());
-        std::uniform_int_distribution<> dis(0, Simulator::Now().GetMilliSeconds() + EPSILON - m_lc);
+        std::uniform_int_distribution<> dis(0, Simulator::Now().GetMilliSeconds() + (EPSILON*INTERVAL) - m_lc);
         m_lc += dis(gen);
 #endif
     }

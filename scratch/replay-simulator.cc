@@ -80,7 +80,7 @@ main(int argc, char* argv[])
     CsmaHelper csma;
     csma.SetChannelAttribute("DataRate", DataRateValue(DataRate(5000000)));
 
-    csma.SetChannelAttribute("Delay", TimeValue(MilliSeconds(DELTA)));
+    csma.SetChannelAttribute("Delay", TimeValue(MicroSeconds(DELTA)));
 
     NetDeviceContainer d = csma.Install(n);
 
@@ -110,7 +110,7 @@ main(int argc, char* argv[])
 
     Time interPacketInterval = MilliSeconds(ALPHA);
 
-    for(int i = 1; i < NUM_PROCS; i++)
+    for(int i = 0; i < NUM_PROCS; i++)
     {
         Ptr<ReplayClientServer> client = new ReplayClientServer();
         client->SetPort(port);
@@ -127,7 +127,7 @@ main(int argc, char* argv[])
     }
 
     apps.Start(Seconds(1.0));
-    apps.Stop(Seconds(20.0));
+    apps.Stop(Seconds(5.0));
 
     AsciiTraceHelper ascii;
     
@@ -162,7 +162,7 @@ main(int argc, char* argv[])
     // Now, do the actual simulation.
     //
     NS_LOG_INFO("Run Simulation.");
-    NS_LOG_INFO("HLC,BITMAP,OFFSETS,COUNTERS,NUM_PROCS,EPSILON,INTERVAL,DELTA,ALPHA,MAX_OFFSET_SIZE,OFFSET_SIZE,COUNTER_SIZE,CLOCK_SIZE,MAX_OFFSET");
+    NS_LOG_INFO("NODEID,HLC,BITMAP,OFFSETS,COUNTERS,NUM_PROCS,EPSILON,INTERVAL,DELTA,ALPHA,MAX_OFFSET_SIZE,OFFSET_SIZE,COUNTER_SIZE,CLOCK_SIZE,MAX_OFFSET");
     Simulator::Run();
     Simulator::Destroy();
     NS_LOG_INFO("Done.");

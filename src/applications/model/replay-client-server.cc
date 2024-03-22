@@ -283,6 +283,7 @@ ReplayClientServer::CreateReplayHeader()
 
   NS_LOG_INFO
   (
+    client_rc.GetNodeId() << "," <<
     client_rc.GetHLC() << "," <<
     client_rc.GetBitmap() << "," <<
     client_rc.GetOffsets() << "," <<
@@ -331,6 +332,7 @@ ReplayClientServer::ProcessPacket(Ptr<Packet> packet)
 
   NS_LOG_INFO
   (
+    server_rc.GetNodeId() << "," <<
     server_rc.GetHLC() << "," <<
     server_rc.GetBitmap() << "," <<
     server_rc.GetOffsets() << "," <<
