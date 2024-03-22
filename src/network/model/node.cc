@@ -146,17 +146,12 @@ uint32_t
 Node::GetNodeLocalClock()
 {
     NS_LOG_FUNCTION(this);
-    m_lc = std::max(Simulator::Now().GetMilliSeconds(), m_lc);
-    if(m_lc == Simulator::Now().GetMilliSeconds())
-    {
-#ifdef REPCL_CONFIG_H
-        // Make this a random number
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_int_distribution<> dis(0, Simulator::Now().GetMilliSeconds() + EPSILON - m_lc);
-        m_lc += dis(gen);
-#endif
-    }
+    
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, Simulator::Now().GetMilliSeconds() + (EPSILON*INTERVAL) - m_lc);
+    m_lc += dis(gen);
+    
     return m_lc / INTERVAL;
 }
 

@@ -102,13 +102,13 @@ class ReplayClientServer : public Application
      * \brief Obtain replay timestamp from the packet
      * \param packet to get Replay timestamp from
      */
-    void ProcessPacket(Ptr<Packet> packet);
+    void ProcessPacket(Ptr<Packet> packet, Ipv4Address send, Ipv4Address recv);
 
     /**
      * \brief Create a Replay timestamp header
      * \return ReplayHeader with the newest clock
      */
-    ReplayHeader CreateReplayHeader();
+    ReplayHeader CreateReplayHeader(Ipv4Address send, Ipv4Address recv);
 
     /**
      * \brief Get a random receiver from list of receivers

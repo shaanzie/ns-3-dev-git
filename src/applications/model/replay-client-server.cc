@@ -191,7 +191,7 @@ ReplayClientServer::Send()
 
   // NS_LOG_INFO(InetSocketAddress::ConvertFrom(to).GetIpv4() << ":" << InetSocketAddress::ConvertFrom(to).GetPort());
 
-  ReplayHeader repheader = CreateReplayHeader();
+  ReplayHeader repheader = CreateReplayHeader(InetSocketAddress::ConvertFrom(from).GetIpv4(), InetSocketAddress::ConvertFrom(to).GetIpv4());
 
   NS_ABORT_IF(m_size < repheader.GetSerializedSize());
   Ptr<Packet> p = Create<Packet>(m_size - repheader.GetSerializedSize());
@@ -260,13 +260,13 @@ ReplayClientServer::Recv(Ptr<Socket> socket)
       );
       m_received++;
 
-      ProcessPacket(packet);
+      ProcessPacket(packet, InetSocketAddress::ConvertFrom(from).GetIpv4(), InetSocketAddress::ConvertFrom(localAddress).GetIpv4());
     }
   }
 }
 
 ReplayHeader
-ReplayClientServer::CreateReplayHeader()
+ReplayClientServer::CreateReplayHeader(Ipv4Address send, Ipv4Address recv)
 {
 
   Ptr<Node> client = GetNode();
@@ -283,6 +283,9 @@ ReplayClientServer::CreateReplayHeader()
 
   NS_LOG_INFO
   (
+    "SEND" << "," <<
+    send  << "," <<
+    recv  << "," <<
     client_rc.GetHLC() << "," <<
     client_rc.GetBitmap() << "," <<
     client_rc.GetOffsets() << "," <<
@@ -304,7 +307,7 @@ ReplayClientServer::CreateReplayHeader()
 }
 
 void
-ReplayClientServer::ProcessPacket(Ptr<Packet> packet)
+ReplayClientServer::ProcessPacket(Ptr<Packet> packet, Ipv4Address send, Ipv4Address recv)
 {
 
   Ptr<Node> server = GetNode();
@@ -331,6 +334,9 @@ ReplayClientServer::ProcessPacket(Ptr<Packet> packet)
 
   NS_LOG_INFO
   (
+    "RECV" << "," <<
+    recv  << "," <<
+    send << "," <<
     server_rc.GetHLC() << "," <<
     server_rc.GetBitmap() << "," <<
     server_rc.GetOffsets() << "," <<

@@ -60,6 +60,7 @@ main(int argc, char* argv[])
         ".A." << ALPHA <<
         ".MAXOFF." << MAX_OFFSET_SIZE
     );
+    sleep(2);
 
     //
     // Explicitly create the nodes required by the topology (shown above).
@@ -127,7 +128,7 @@ main(int argc, char* argv[])
     }
 
     apps.Start(Seconds(1.0));
-    apps.Stop(Seconds(20.0));
+    apps.Stop(Seconds(100.0));
 
     AsciiTraceHelper ascii;
     
@@ -162,7 +163,7 @@ main(int argc, char* argv[])
     // Now, do the actual simulation.
     //
     NS_LOG_INFO("Run Simulation.");
-    NS_LOG_INFO("HLC,BITMAP,OFFSETS,COUNTERS,NUM_PROCS,EPSILON,INTERVAL,DELTA,ALPHA,MAX_OFFSET_SIZE,OFFSET_SIZE,COUNTER_SIZE,CLOCK_SIZE,MAX_OFFSET");
+    NS_LOG_INFO("MSG_TYPE,NODE_1,NODE_2,HLC,BITMAP,OFFSETS,COUNTERS,NUM_PROCS,EPSILON,INTERVAL,DELTA,ALPHA,MAX_OFFSET_SIZE,OFFSET_SIZE,COUNTER_SIZE,CLOCK_SIZE,MAX_OFFSET");
     Simulator::Run();
     Simulator::Destroy();
     NS_LOG_INFO("Done.");

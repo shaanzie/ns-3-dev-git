@@ -98,6 +98,7 @@ ReplayClock::SendLocal(uint32_t node_hlc)
     // std::cout << "--------------------------SEND DONE!--------------------------" << std::endl;
     // PrintClock();
     // std::cout << "==============================================================" << std::endl;
+    // sleep(2);
 }
 
 void 
@@ -156,6 +157,7 @@ ReplayClock::Recv(ReplayClock m_ReplayClock, uint32_t node_hlc)
     *this = a;
 
     offset_bitmap[nodeId] = 1;
+    SetOffsetAtIndex(nodeId, 0);
 
     // std::cout << "--------------------------FINAL CLOCK--------------------------" << std::endl;
 
@@ -253,12 +255,13 @@ extract(int number, int k, int p)
 uint32_t 
 ReplayClock::GetOffsetAtIndex(uint32_t index)
 {
+    // std::cout << offsets << std::endl;
     
-    // cout << endl << "Extract " << 8 << " bits from position " << 4*index << endl;
+    // std::cout << "Extract " << MAX_OFFSET_SIZE << " bits from position " << MAX_OFFSET_SIZE*index << std::endl;
 
     std::bitset<MAX_OFFSET_SIZE> offset(extract(offsets.to_ulong(), MAX_OFFSET_SIZE, MAX_OFFSET_SIZE * index));
     
-    // cout << "Offset: " << offset << endl;
+    // std::cout << "Offset: " << offset << std::endl;
 
     return offset.to_ulong();
 
@@ -378,18 +381,35 @@ ReplayClock::Deserialize(uint8_t* buffer, uint32_t* integers)
 void 
 ReplayClock::PrintClock()
 {
-    std::cout << "NodeID: " << nodeId << std::endl;
 
-    std::cout << "HLC: " << hlc << std::endl;
+    std::cout   << nodeId << "," 
+                << hlc << ",[";
 
     for(int i = 0; i < offset_bitmap.size(); i++)
     {
-        std::cout << "Offset for process " << i << "(" << offset_bitmap[i] << "): ";
-        std::cout << GetOffsetAtIndex(i) << std::endl;
+        if(offset_bitmap[i] == 0)
+        {
+            std::cout << epsilon << ",";
+        }
+        else
+        {
+            std::cout << GetOffsetAtIndex(i) << ",";
+        }
     }
 
-    std::cout << "Counters: " << counters << std::endl;
+    std::cout << "]," << counters << std::endl;
 
+    // std::cout << "-----------------------------------------" << std::endl;
+
+    // std::cout << "NodeID: " << nodeId << std::endl;
+
+    // std::cout << "HLC: " << hlc << std::endl;
+
+    // std::cout << "Bitmap: " << offset_bitmap << std::endl;
+
+    // std::cout << "Offsets: " << offsets << std::endl;
+
+    // std::cout << "Counters: " << counters << std::endl;
 
 }
 
