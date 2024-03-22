@@ -223,9 +223,9 @@ ReplayClock::Shift(uint32_t new_hlc)
 
         uint32_t new_offset = std::min(new_hlc - (hlc - offset_at_index), epsilon);
 
-        // std::cout   << "Old offset for process ID: " << process_id << " and index " << index <<  ": " 
-        //             << offset_at_index << ", new offset: " << new_offset << std::endl;
-        // std::cout << "Epsilon: " << epsilon << std::endl;
+        std::cout   << "Old offset for process ID: " << process_id << " and index " << index <<  ": " 
+                    << offset_at_index << ", new offset: " << new_offset << std::endl;
+        std::cout << "Epsilon: " << epsilon << std::endl;
 
         if(new_offset >= epsilon)
         {    
@@ -443,14 +443,15 @@ ReplayClock::PrintClock()
     int index = 0;
     while(bitmap > 0)   
     {
-        if(offset_bitmap[i] == 0)
+        if(offset_bitmap[index] == 0)
         {
             std::cout << epsilon << ",";
         }
         else
         {
-            std::cout << GetOffsetAtIndex(i) << ",";
+            std::cout << GetOffsetAtIndex(index) << ",";
         }
+        index++;
     }
 
     std::cout << "]," << counters << std::endl;
