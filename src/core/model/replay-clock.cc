@@ -192,9 +192,23 @@ ReplayClock::Recv(ReplayClock m_ReplayClock, uint32_t node_hlc)
     }
 
     *this = a;
+    
+    int index = 0;
+    uint32_t bitmap = offset_bitmap.to_ulong();
+    while(bitmap > 0)
+    {
+
+        uint32_t process_id = log2((~(bitmap ^ (~(bitmap - 1))) + 1) >> 1);
+        if(process_id == pid)
+        {
+            SetOffsetAtIndex(index, 0);
+        }
+
+        bitmap = bitmap & (bitmap - 1);
+        index++;
+    }
 
     offset_bitmap[nodeId] = 1;
-    SetOffsetAtIndex(nodeId, 0);
 
 //     std::cout << "--------------------------FINAL CLOCK--------------------------" << std::endl;
 
@@ -223,9 +237,9 @@ ReplayClock::Shift(uint32_t new_hlc)
 
         uint32_t new_offset = std::min(new_hlc - (hlc - offset_at_index), epsilon);
 
-        std::cout   << "Old offset for process ID: " << process_id << " and index " << index <<  ": " 
-                    << offset_at_index << ", new offset: " << new_offset << std::endl;
-        std::cout << "Epsilon: " << epsilon << std::endl;
+        // std::cout   << "Old offset for process ID: " << process_id << " and index " << index <<  ": " 
+        //             << offset_at_index << ", new offset: " << new_offset << std::endl;
+        // std::cout << "Epsilon: " << epsilon << std::endl;
 
         if(new_offset >= epsilon)
         {    

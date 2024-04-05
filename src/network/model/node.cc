@@ -114,7 +114,7 @@ Node::Construct()
 #ifdef REPCL_CONFIG_H
     m_lc = 0;
     m_rc = ReplayClock(
-        GetNodeLocalClock() / INTERVAL,
+        GetNodeLocalClock(),
         m_id,
         EPSILON,
         INTERVAL
@@ -149,7 +149,7 @@ Node::GetNodeLocalClock()
     
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, Simulator::Now().GetMilliSeconds() + (EPSILON*INTERVAL) - m_lc);
+    std::uniform_int_distribution<> dis(0, (Simulator::Now().GetMicroSeconds() + (EPSILON*INTERVAL) - m_lc) - 1);
     m_lc += dis(gen);
     
     return m_lc / INTERVAL;

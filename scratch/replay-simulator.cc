@@ -109,7 +109,7 @@ main(int argc, char* argv[])
 
     ApplicationContainer apps;
 
-    Time interPacketInterval = MilliSeconds(ALPHA);
+    Time interPacketInterval = MilliSeconds(1000/ALPHA);
 
     for(int i = 0; i < NUM_PROCS; i++)
     {
@@ -128,7 +128,7 @@ main(int argc, char* argv[])
     }
 
     apps.Start(Seconds(1.0));
-    apps.Stop(Seconds(100.0));
+    apps.Stop(Seconds(10.0));
 
     AsciiTraceHelper ascii;
     

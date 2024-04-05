@@ -35,6 +35,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <unistd.h>
+#include <random>
 
 namespace ns3
 {
@@ -228,11 +229,14 @@ ReplayClientServer::Send()
 Address
 ReplayClientServer::GetRandomIP()
 {
-  std::srand(static_cast<unsigned int>(std::time(nullptr)));
+  std::random_device rd; 
+  std::mt19937 gen(rd());
+  std::uniform_int_distribution<> distrib(0, m_peerAddresses.size() - 1);
 
-  int randomIP = std::rand() % m_peerAddresses.size();
+  int randomIP = distrib(gen);
 
-  return m_peerAddresses[(GetNode()->GetId() + 1) % m_peerAddresses.size()];
+  // return m_peerAddresses[(GetNode()->GetId() + 1) % m_peerAddresses.size()];
+  return m_peerAddresses[randomIP];
 
 }
 
