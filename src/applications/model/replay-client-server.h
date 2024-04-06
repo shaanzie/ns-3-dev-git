@@ -80,6 +80,8 @@ class ReplayClientServer : public Application
      */
     void SetSize(uint32_t size);
 
+    void Tick();
+
   protected:
     void DoDispose() override;
 
@@ -132,6 +134,7 @@ class ReplayClientServer : public Application
     std::vector<Address>      m_peerAddresses;  //!< Remote peer address
     uint16_t                  m_peerPort;       //!< Remote peer port
     EventId                   m_sendEvent;      //!< Event to send the next packet
+    EventId                   m_tick;      //!< Event to send the next packet
     uint64_t                  m_received;       //!< Number of received packets
 
 };

@@ -92,6 +92,12 @@ class Node : public Object
 
     /**
      *
+     * Ticks the node forward
+     */
+    void Tick();
+
+    /**
+     *
      * \return The ReplayClock as seen by this node
      */
     uint32_t GetNodeLocalClock();

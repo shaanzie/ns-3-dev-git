@@ -1,3 +1,6 @@
+rm *.csv
+rm *.tr
+
 NUM_PROCS=32
 
 # ALPHA - Message rate (milliseconds)

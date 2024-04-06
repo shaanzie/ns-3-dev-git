@@ -55,14 +55,9 @@ ReplayClientServer::GetTypeId()
           .AddAttribute(
               "MaxPackets",
               "The maximum number of packets the application will send (zero means infinite)",
-              UintegerValue(100),
+              UintegerValue(0),
               MakeUintegerAccessor(&ReplayClientServer::m_count),
               MakeUintegerChecker<uint32_t>())
-          .AddAttribute("Interval",
-                        "The time to wait between packets",
-                        TimeValue(Seconds(1.0)),
-                        MakeTimeAccessor(&ReplayClientServer::m_interval),
-                        MakeTimeChecker())
           .AddAttribute("RemotePort",
                         "The destination port of the outbound packets",
                         UintegerValue(100),
@@ -84,6 +79,7 @@ ReplayClientServer::ReplayClientServer()
   m_socket = nullptr;
   m_sendEvent = EventId();
   m_received = 0;
+  m_tick = EventId();
 }
 
 ReplayClientServer::~ReplayClientServer()
@@ -156,7 +152,13 @@ ReplayClientServer::StartApplication()
 
   m_socket->SetRecvCallback(MakeCallback(&ReplayClientServer::Recv, this));
 
-  m_sendEvent = Simulator::Schedule(Seconds(0.0), &ReplayClientServer::Send, this);
+
+  std::random_device rd; 
+  std::mt19937 gen(rd());
+  std::uniform_int_distribution<> distrib(0, EPSILON*INTERVAL);
+  m_sendEvent = Simulator::Schedule(MicroSeconds(0.0), &ReplayClientServer::Send, this);
+
+  m_tick = Simulator::Schedule(MicroSeconds(0.0), &ReplayClientServer::Tick, this);
 
 }
 
@@ -165,6 +167,7 @@ ReplayClientServer::StopApplication()
 {
   NS_LOG_FUNCTION(this);
   Simulator::Cancel(m_sendEvent);
+  Simulator::Cancel(m_tick);
   if (m_socket)
   {
       m_socket->SetRecvCallback(MakeNullCallback<void, Ptr<Socket>>());
@@ -229,11 +232,18 @@ ReplayClientServer::Send()
 Address
 ReplayClientServer::GetRandomIP()
 {
-  std::random_device rd; 
-  std::mt19937 gen(rd());
-  std::uniform_int_distribution<> distrib(0, m_peerAddresses.size() - 1);
 
-  int randomIP = distrib(gen);
+  int randomIP = GetNode()->GetId();
+
+  while(randomIP == GetNode()->GetId())
+  {
+    std::random_device rd; 
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> distrib(0, m_peerAddresses.size() - 1);
+
+    randomIP = distrib(gen);
+  }
+  
 
   // return m_peerAddresses[(GetNode()->GetId() + 1) % m_peerAddresses.size()];
   return m_peerAddresses[randomIP];
@@ -357,6 +367,12 @@ ReplayClientServer::ProcessPacket(Ptr<Packet> packet, Ipv4Address send, Ipv4Addr
     server_rc.GetMaxOffset()
   );
 
+}
+
+void
+ReplayClientServer::Tick()
+{
+  GetNode()->Tick();
 }
 
 } // namespace ns3

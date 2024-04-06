@@ -32,7 +32,7 @@ NS_LOG_COMPONENT_DEFINE("ReplayClock");
 uint32_t 
 ReplayClock::GetOffsetSize()
 {
-    return ((offset_bitmap.count() * MAX_OFFSET_SIZE) + 1) / 8;
+    return offset_bitmap.count() * MAX_OFFSET_SIZE;
 }
 
 uint32_t 
@@ -59,13 +59,13 @@ ReplayClock::GetMaxOffset()
 uint32_t 
 ReplayClock::GetCounterSize()
 {
-    return (log2(counters) + 1) / 8;
+    return log2(counters) + 1;
 }
 
 uint32_t 
 ReplayClock::GetClockSize()
 {
-    return GetOffsetSize() + GetCounterSize() + ((log2(hlc) + 1) / 8);
+    return GetOffsetSize() + GetCounterSize() + (log2(hlc) + 1);
 }
 
 void 
@@ -135,7 +135,7 @@ ReplayClock::SendLocal(uint32_t node_hlc)
     // std::cout << "--------------------------SEND DONE!--------------------------" << std::endl;
     // PrintClock();
     // std::cout << "==============================================================" << std::endl;
-    // sleep(2);
+    // sleep(1);
 }
 
 void 
@@ -160,15 +160,7 @@ ReplayClock::Recv(ReplayClock m_ReplayClock, uint32_t node_hlc)
 
     a.Shift(new_hlc);
 
-    // std::cout << "--------------------------A SHIFTED CLOCK--------------------------" << std::endl;
-
-    // a.PrintClock();
-
     b.Shift(new_hlc);
-
-    // std::cout << "--------------------------B SHIFTED CLOCK--------------------------" << std::endl;
-
-    // b.PrintClock();
 
     a.MergeSameEpoch(b);
 
@@ -199,7 +191,7 @@ ReplayClock::Recv(ReplayClock m_ReplayClock, uint32_t node_hlc)
     {
 
         uint32_t process_id = log2((~(bitmap ^ (~(bitmap - 1))) + 1) >> 1);
-        if(process_id == pid)
+        if(process_id == nodeId)
         {
             SetOffsetAtIndex(index, 0);
         }
@@ -210,13 +202,13 @@ ReplayClock::Recv(ReplayClock m_ReplayClock, uint32_t node_hlc)
 
     offset_bitmap[nodeId] = 1;
 
-//     std::cout << "--------------------------FINAL CLOCK--------------------------" << std::endl;
+    // std::cout << "--------------------------FINAL CLOCK--------------------------" << std::endl;
 
-//     PrintClock();
+    // PrintClock();
 
-//     std::cout << "--------------------------RECV DONE!--------------------------" << std::endl;
+    // std::cout << "--------------------------RECV DONE!--------------------------" << std::endl;
 
-//     sleep(2);
+    // sleep(1);
 }
 
 void 
@@ -261,32 +253,64 @@ ReplayClock::Shift(uint32_t new_hlc)
 void 
 ReplayClock::MergeSameEpoch(ReplayClock m_ReplayClock)
 {
-    
-    offset_bitmap = offset_bitmap | m_ReplayClock.offset_bitmap;
 
-    uint32_t bitmap = offset_bitmap.to_ulong();
-    uint32_t index = 0;
+    // std::cout << "--------------------------A CLOCK--------------------------" << std::endl;
+
+    // PrintClock();
+
+    // std::cout << "--------------------------B CLOCK--------------------------" << std::endl;
+
+    // m_ReplayClock.PrintClock();
+
+    ReplayClock temp_clock = *this;
+    temp_clock.offset_bitmap = offset_bitmap | m_ReplayClock.offset_bitmap;
+    temp_clock.offsets = 0;
+
+    uint32_t bitmap = temp_clock.offset_bitmap.to_ulong();
+    uint32_t left_index = 0;
+    uint32_t right_index = 0;
+    uint32_t new_index = 0;
+    uint32_t new_offset;
 
     while(bitmap > 0)
     {
         uint32_t pos = log2((~(bitmap ^ (~(bitmap - 1))) + 1) >> 1);
-        
-        uint32_t new_offset = std::min(GetOffsetAtIndex(index), m_ReplayClock.GetOffsetAtIndex(index));
 
-        if(new_offset >= epsilon)
+        if(offset_bitmap[pos] == 1 && m_ReplayClock.offset_bitmap[pos] == 1)
         {
-            RemoveOffsetAtIndex(index); 
-            offset_bitmap[pos] = 0;
+
+            new_offset = std::min(GetOffsetAtIndex(left_index), m_ReplayClock.GetOffsetAtIndex(right_index));
+            ++left_index;
+            ++right_index;
+
+        }
+        else if(offset_bitmap[pos] == 1)
+        {
+            new_offset = GetOffsetAtIndex(left_index);
+            ++left_index;
         }
         else
         {
-            SetOffsetAtIndex(index, new_offset);
-            offset_bitmap[pos] = 1;
+            new_offset = m_ReplayClock.GetOffsetAtIndex(right_index);
+            ++right_index;
         }
-        bitmap = bitmap & (bitmap - 1);
 
-        index++;
+        if(new_offset >= epsilon)
+        {
+            temp_clock.RemoveOffsetAtIndex(new_index); 
+            temp_clock.offset_bitmap[pos] = 0;
+        }
+        else
+        {
+            temp_clock.SetOffsetAtIndex(new_index, new_offset);
+        }
+
+        
+        bitmap = bitmap & (bitmap - 1);
+        new_index++;
     }
+
+    *this = temp_clock;
 }
 
 
@@ -451,36 +475,26 @@ ReplayClock::PrintClock()
 {
 
     std::cout   << nodeId << "," 
-                << hlc << ",[";
+                << hlc << ","
+                << GetBitmap() << ","
+                << GetOffsets() << ",[";
 
     uint32_t bitmap = offset_bitmap.to_ulong();
-    int index = 0;
-    while(bitmap > 0)   
-    {
-        if(offset_bitmap[index] == 0)
-        {
-            std::cout << epsilon << ",";
-        }
-        else
-        {
-            std::cout << GetOffsetAtIndex(index) << ",";
-        }
-        index++;
-    }
+    // int index = 0;
+    // while(bitmap > 0)   
+    // {
+    //     if(offset_bitmap[index] == 0)
+    //     {
+    //         std::cout << epsilon << ",";
+    //     }
+    //     else
+    //     {
+    //         std::cout << GetOffsetAtIndex(index) << ",";
+    //     }
+    //     index++;
+    // }
 
     std::cout << "]," << counters << std::endl;
-
-    // std::cout << "-----------------------------------------" << std::endl;
-
-    // std::cout << "NodeID: " << nodeId << std::endl;
-
-    // std::cout << "HLC: " << hlc << std::endl;
-
-    // std::cout << "Bitmap: " << offset_bitmap << std::endl;
-
-    // std::cout << "Offsets: " << offsets << std::endl;
-
-    // std::cout << "Counters: " << counters << std::endl;
 
 }
 

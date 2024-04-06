@@ -142,16 +142,27 @@ Node::GetLocalTime() const
     return Simulator::Now();
 }
 
+void
+Node::Tick()
+{
+
+    NS_LOG_FUNCTION(this);
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, (Simulator::Now().GetMilliSeconds() + (EPSILON*INTERVAL) - m_lc) - 1);
+    m_lc += dis(gen);
+
+    // if(Simulator::Now().GetSeconds() < 10.0)
+    //     Simulator::Schedule(MicroSeconds(100.0), &Node::Tick, this);
+
+}
+
 uint32_t
 Node::GetNodeLocalClock()
 {
     NS_LOG_FUNCTION(this);
-    
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, (Simulator::Now().GetMicroSeconds() + (EPSILON*INTERVAL) - m_lc) - 1);
-    m_lc += dis(gen);
-    
+    Tick();
     return m_lc / INTERVAL;
 }
 

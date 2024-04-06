@@ -81,7 +81,7 @@ main(int argc, char* argv[])
     CsmaHelper csma;
     csma.SetChannelAttribute("DataRate", DataRateValue(DataRate(5000000)));
 
-    csma.SetChannelAttribute("Delay", TimeValue(MicroSeconds(DELTA)));
+    csma.SetChannelAttribute("Delay", TimeValue(MicroSeconds((double)DELTA)));
 
     NetDeviceContainer d = csma.Install(n);
 
@@ -109,7 +109,8 @@ main(int argc, char* argv[])
 
     ApplicationContainer apps;
 
-    Time interPacketInterval = MilliSeconds(1000/ALPHA);
+    Time interPacketInterval = MicroSeconds((10e6 * 32)/ ALPHA);
+    std::cout << "Alpha: " << interPacketInterval.As(Time::MS) << std::endl;
 
     for(int i = 0; i < NUM_PROCS; i++)
     {
@@ -127,8 +128,8 @@ main(int argc, char* argv[])
 
     }
 
-    apps.Start(Seconds(1.0));
-    apps.Stop(Seconds(10.0));
+    apps.Start(Seconds(0.0));
+    apps.Stop(Seconds(100.0));
 
     AsciiTraceHelper ascii;
     
@@ -144,7 +145,7 @@ main(int argc, char* argv[])
                 << ".tr"; 
 
 
-    csma.EnableAsciiAll(ascii.CreateFileStream(filename.str()));
+    // csma.EnableAsciiAll(ascii.CreateFileStream(filename.str()));
 
     std::stringstream pcapfile;
 
