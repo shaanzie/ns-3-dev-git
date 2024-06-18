@@ -46,6 +46,13 @@ class ReplayHeader : public Header
     ReplayClock GetReplayClock() const;
 
     /**
+     * Sets the sequence number
+     */
+    void SetSq(int seqTs);
+
+    int GetSq();
+
+    /**
      * Set the ReplayClock
      */
     void SetReplayClock();
@@ -64,6 +71,7 @@ class ReplayHeader : public Header
 
   private:
     ReplayClock m_rc;
+    int m_seqTs;
 
 };
 

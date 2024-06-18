@@ -129,7 +129,7 @@ main(int argc, char* argv[])
     }
 
     apps.Start(Seconds(0.0));
-    apps.Stop(Seconds(100.0));
+    apps.Stop(Seconds(1000.0));
 
     AsciiTraceHelper ascii;
     
@@ -145,7 +145,7 @@ main(int argc, char* argv[])
                 << ".tr"; 
 
 
-    // csma.EnableAsciiAll(ascii.CreateFileStream(filename.str()));
+    csma.EnableAsciiAll(ascii.CreateFileStream(filename.str()));
 
     std::stringstream pcapfile;
 
@@ -158,13 +158,13 @@ main(int argc, char* argv[])
                 << "MAXOFFSETSIZE." << MAX_OFFSET_SIZE
                 << ".replay-sim";
 
-    // csma.EnablePcapAll(pcapfile.str(), true);
+    csma.EnablePcapAll(pcapfile.str(), true);
 
     //
     // Now, do the actual simulation.
     //
     NS_LOG_INFO("Run Simulation.");
-    NS_LOG_INFO("MSG_TYPE,NODE_1,NODE_2,HLC,BITMAP,OFFSETS,COUNTERS,NUM_PROCS,EPSILON,INTERVAL,DELTA,ALPHA,MAX_OFFSET_SIZE,OFFSET_SIZE,COUNTER_SIZE,CLOCK_SIZE,MAX_OFFSET");
+    NS_LOG_INFO("MSG_TYPE,NODE_1,NODE_2,SEQTS,HLC,BITMAP,OFFSETS,COUNTERS,NUM_PROCS,EPSILON,INTERVAL,DELTA,ALPHA,MAX_OFFSET_SIZE,OFFSET_SIZE,COUNTER_SIZE,CLOCK_SIZE,MAX_OFFSET");
     Simulator::Run();
     Simulator::Destroy();
     NS_LOG_INFO("Done.");

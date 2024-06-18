@@ -49,6 +49,20 @@ ReplayHeader::GetReplayClock() const
     return m_rc;
 }
 
+void
+ReplayHeader::SetSq(int seqTs)
+{
+    NS_LOG_FUNCTION(this);
+    m_seqTs = seqTs;
+}
+
+int
+ReplayHeader::GetSq()
+{
+    NS_LOG_FUNCTION(this);
+    return m_seqTs;
+}
+
 TypeId
 ReplayHeader::GetTypeId()
 {
@@ -90,6 +104,7 @@ ReplayHeader::Serialize(Buffer::Iterator start) const
 {
     NS_LOG_FUNCTION(this << &start);
     Buffer::Iterator i = start;
+    i.WriteHtonU32(m_seqTs);
     i.WriteHtonU32(m_rc.GetHLC());
     i.WriteHtonU32(m_rc.GetNodeId());
     i.WriteHtonU64(m_rc.GetBitmap().to_ullong());
@@ -102,6 +117,7 @@ ReplayHeader::Deserialize(Buffer::Iterator start)
 {
     NS_LOG_FUNCTION(this << &start);
     Buffer::Iterator i = start;
+    m_seqTs = i.ReadNtohU32();
     m_rc.SetHLC(i.ReadNtohU32());
     m_rc.SetNodeId(i.ReadNtohU32());
     m_rc.SetOffsetBitmap(i.ReadNtohU64());
