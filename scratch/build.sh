@@ -1,18 +1,6 @@
 rm *.csv
 rm *.tr
 
-NUM_PROCS=32
-
-# ALPHA - Message rate (milliseconds)
-ALPHA=500
-
-# DELTA - Message delay (milliseconds)
-DELTA=200
-
-INTERVAL=10
-
-EPSILON=30
-
 # Function to calculate the number of bits required to store an integer
 num_bits() {
     number=$1
@@ -29,10 +17,10 @@ num_bits() {
 today=$(date +"%Y-%m-%d")
 
 
-for (( NUM_PROCS=32; NUM_PROCS<=64; NUM_PROCS+=32)); do
-    for (( EPSILON=100; EPSILON<=1000; EPSILON+=50)); do
+for (( NUM_PROCS=32; NUM_PROCS<=32; NUM_PROCS+=32)); do
+    for (( EPSILON=100; EPSILON<=1000; EPSILON+=100)); do
         for (( INTERVAL=10; INTERVAL<=40; INTERVAL+=10)); do
-            if (( INTERVAL * EPSILON % 1000 == 0 && INTERVAL*EPSILON <= 6000 )); then
+            if (( INTERVAL * EPSILON % 1000 == 0 && INTERVAL*EPSILON <= 3000 )); then
                 for (( DELTA=1; DELTA<=8; DELTA*=2)); do
                     for (( ALPHA=20; ALPHA<=160; ALPHA*=2)); do
                         MAX_OFFSET_SIZE=$(num_bits $EPSILON)
