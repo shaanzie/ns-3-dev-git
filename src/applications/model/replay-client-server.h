@@ -110,7 +110,7 @@ class ReplayClientServer : public Application
      * \brief Create a Replay timestamp header
      * \return ReplayHeader with the newest clock
      */
-    ReplayHeader CreateReplayHeader(Ipv4Address send, Ipv4Address recv);
+    ReplayHeader CreateReplayHeader(Ipv4Address send, Ipv4Address recv, uint32_t seq);
 
     /**
      * \brief Get a random receiver from list of receivers

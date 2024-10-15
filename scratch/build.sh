@@ -17,7 +17,7 @@ num_bits() {
 today=$(date +"%Y-%m-%d")
 
 
-for (( NUM_PROCS=32; NUM_PROCS<=32; NUM_PROCS+=32)); do
+for (( NUM_PROCS=5; NUM_PROCS<=5; NUM_PROCS+=32)); do
     for (( EPSILON=100; EPSILON<=1000; EPSILON+=100)); do
         for (( INTERVAL=10; INTERVAL<=40; INTERVAL+=10)); do
             if (( INTERVAL * EPSILON % 1000 == 0 && INTERVAL*EPSILON <= 3000 )); then
@@ -27,6 +27,7 @@ for (( NUM_PROCS=32; NUM_PROCS<=32; NUM_PROCS+=32)); do
 
                         echo "N.${NUM_PROCS}-E.${EPSILON}-I.${INTERVAL}-D.${DELTA}-A.${ALPHA}-M.${MAX_OFFSET_SIZE}"    
                         
+                        rm replay-config.h
                         touch replay-config.h
 
                         echo "#define REPCL_CONFIG_H" >> replay-config.h

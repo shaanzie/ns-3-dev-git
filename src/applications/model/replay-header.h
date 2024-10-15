@@ -46,6 +46,16 @@ class ReplayHeader : public Header
     ReplayClock GetReplayClock() const;
 
     /**
+     * \param seq the sequence number
+     */
+    void SetSeq(uint32_t seq);
+
+    /**
+     * \return the sequence number
+     */
+    uint32_t GetSeq() const;
+
+    /**
      * Set the ReplayClock
      */
     void SetReplayClock();
@@ -63,6 +73,7 @@ class ReplayHeader : public Header
     uint32_t Deserialize(Buffer::Iterator start) override;
 
   private:
+    uint32_t m_seq;
     ReplayClock m_rc;
 
 };
